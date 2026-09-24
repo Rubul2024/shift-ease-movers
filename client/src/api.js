@@ -1,13 +1,35 @@
 // Thin fetch wrapper around the Express API.
-// In development CRA proxies /api to http://localhost:5000 (see "proxy" in package.json).
+// In development CRA proxies /api to http://127.0.0.1:5000 (see src/setupProxy.js).
 const BASE = process.env.REACT_APP_API_URL || '/api';
 const TOKEN_KEY = 'se_token';
 
+// localStorage can throw (private mode, blocked storage), so never let it crash the app.
 export const tokenStore = {
-  get: () => localStorage.getItem(TOKEN_KEY),
-  set: (t) => localStorage.setItem(TOKEN_KEY, t),
-  clear: () => localStorage.removeItem(TOKEN_KEY),
+  get: () => {
+    try {
+      return localStorage.getItem(TOKEN_KEY);
+    } catch {
+      return null;
+    }
+  },
+  set: (t) => {
+    try {
+      localStorage.setItem(TOKEN_KEY, t);
+    } catch {
+      /* session will last until reload */
+    }
+  },
+  clear: () => {
+    try {
+      localStorage.removeItem(TOKEN_KEY);
+    } catch {
+      /* nothing stored */
+    }
+  },
 };
+
+// Fired when the server rejects our token so AuthContext can log the user out.
+export const SESSION_EXPIRED_EVENT = 'se:session-expired';
 
 export async function request(path, { method = 'GET', body } = {}) {
   const headers = { 'Content-Type': 'application/json' };
@@ -18,9 +40,13 @@ export async function request(path, { method = 'GET', body } = {}) {
   try {
     res = await fetch(`${BASE}${path}`, { method, headers, body: body ? JSON.stringify(body) : undefined });
   } catch {
-    throw new Error('Cannot reach the server. Is the API running on port 5000?');
+    throw new Error('Cannot reach the server. Please check your connection and try again.');
   }
   const data = await res.json().catch(() => ({}));
+  if (res.status === 401 && token) {
+    tokenStore.clear();
+    window.dispatchEvent(new Event(SESSION_EXPIRED_EVENT));
+  }
   if (!res.ok) throw new Error(data.message || `Request failed (${res.status})`);
   return data;
 }
@@ -56,7 +82,7 @@ const api = {
   bookings: (status = '') => request(`/bookings${status ? `?status=${encodeURIComponent(status)}` : ''}`),
   setBookingStatus: (id, body) => request(`/bookings/${id}/status`, { method: 'PUT', body }),
   // services
-  services: () => request('/services'),
+  services: (all = false) => request(`/services${all ? '?all=true' : ''}`),
   createService: (body) => request('/services', { method: 'POST', body }),
   updateService: (id, body) => request(`/services/${id}`, { method: 'PUT', body }),
   deleteService: (id) => request(`/services/${id}`, { method: 'DELETE' }),

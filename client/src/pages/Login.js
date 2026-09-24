@@ -4,6 +4,9 @@ import Icon from '../components/Icon';
 import { Alert } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
 
+// Seeded demo logins are shown in development, or in production only when explicitly enabled.
+const SHOW_DEMO_LOGINS = process.env.NODE_ENV !== 'production' || process.env.REACT_APP_SHOW_DEMO_LOGINS === 'true';
+
 export function AuthSide() {
   return (
     <div className="auth-side">
@@ -67,9 +70,11 @@ export default function Login() {
           <button className="btn btn-primary btn-block" disabled={state.loading}>
             {state.loading ? 'Signing in…' : 'Sign in'}
           </button>
-          <div className="demo-creds">
-            Demo {role}: <b>{role === 'admin' ? 'admin@shiftease.com / Admin@123' : 'customer@shiftease.com / Customer@123'}</b>
-          </div>
+          {SHOW_DEMO_LOGINS && (
+            <div className="demo-creds">
+              Demo {role}: <b>{role === 'admin' ? 'admin@shiftease.com / Admin@123' : 'customer@shiftease.com / Customer@123'}</b>
+            </div>
+          )}
           {role === 'customer' && (
             <p className="center small muted">
               New here? <Link to="/register" state={location.state} className="text-blue" style={{ fontWeight: 700 }}>Create an account</Link>

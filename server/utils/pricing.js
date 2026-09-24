@@ -4,6 +4,8 @@
  * the server is always the source of truth when a quote or booking is saved.
  */
 
+const { httpError } = require('./validate');
+
 const VEHICLES = {
   'Mini Truck': { base: 1500, perKm: 22, fits: 'Up to 1 BHK' },
   Tempo: { base: 2500, perKm: 30, fits: '1-2 BHK' },
@@ -55,10 +57,10 @@ function calculateQuote({
   premiumPacking = false,
   insurance = false,
 }) {
-  const vehicle = VEHICLES[vehicleType];
-  const labour = HOUSE_TYPES[houseType];
-  if (!vehicle) throw new Error(`Unknown vehicle type: ${vehicleType}`);
-  if (labour === undefined) throw new Error(`Unknown house type: ${houseType}`);
+  const vehicle = Object.hasOwn(VEHICLES, vehicleType) ? VEHICLES[vehicleType] : undefined;
+  const labour = Object.hasOwn(HOUSE_TYPES, houseType) ? HOUSE_TYPES[houseType] : undefined;
+  if (!vehicle) throw httpError(400, 'Please choose a valid vehicle type');
+  if (labour === undefined) throw httpError(400, 'Please choose a valid home size');
 
   const km = Math.max(MIN_DISTANCE_KM, Number(distanceKm) || 0);
   const vehicleBase = vehicle.base;

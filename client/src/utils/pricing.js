@@ -31,6 +31,7 @@ const FLOOR_RATE = 350;
 const MIN_KM = 5;
 const round = Math.round;
 const toRad = (d) => (d * Math.PI) / 180;
+export const hasOwn = (obj, key) => Object.prototype.hasOwnProperty.call(obj, key);
 
 export function distanceBetween(a, b) {
   if (!a || !b) return MIN_KM;
@@ -41,8 +42,8 @@ export function distanceBetween(a, b) {
 }
 
 export function calculateQuote({ vehicleType, houseType, distanceKm, pickupFloor = 0, dropFloor = 0, liftAvailable = true, premiumPacking = false, insurance = false }) {
-  const vehicle = VEHICLES[vehicleType];
-  const labour = HOUSE_TYPES[houseType];
+  const vehicle = hasOwn(VEHICLES, vehicleType) ? VEHICLES[vehicleType] : undefined;
+  const labour = hasOwn(HOUSE_TYPES, houseType) ? HOUSE_TYPES[houseType] : undefined;
   if (!vehicle || labour === undefined) return null;
   const km = Math.max(MIN_KM, Number(distanceKm) || 0);
   const distanceCharge = round(km * vehicle.perKm);

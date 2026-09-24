@@ -2,14 +2,14 @@ const router = require('express').Router();
 const Contact = require('../models/Contact');
 const asyncHandler = require('../utils/asyncHandler');
 const { protect, adminOnly } = require('../middleware/auth');
+const { pick, escapeRegex } = require('../utils/validate');
 
 // POST /api/contacts  -> public inquiry form
 router.post(
   '/',
   asyncHandler(async (req, res) => {
-    const { name, email, phone, city, subject, message } = req.body;
-    const contact = await Contact.create({ name, email, phone, city, subject, message });
-    res.status(201).json({ message: 'Thanks! Our team will call you within 30 minutes.', contact });
+    const contact = await Contact.create(pick(req.body, ['name', 'email', 'phone', 'city', 'subject', 'message']));
+    res.status(201).json({ message: 'Thanks! Our team will call you within 30 minutes.', id: contact._id });
   })
 );
 
@@ -21,9 +21,9 @@ router.get(
   asyncHandler(async (req, res) => {
     const { status, q } = req.query;
     const filter = {};
-    if (status) filter.status = status;
+    if (status) filter.status = String(status);
     if (q) {
-      const rx = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+      const rx = new RegExp(escapeRegex(q), 'i');
       filter.$or = [{ name: rx }, { email: rx }, { phone: rx }, { city: rx }, { message: rx }];
     }
     res.json(await Contact.find(filter).sort({ createdAt: -1 }));
@@ -35,8 +35,7 @@ router.put(
   protect,
   adminOnly,
   asyncHandler(async (req, res) => {
-    const allowed = ['name', 'email', 'phone', 'city', 'subject', 'message', 'status', 'adminNotes'];
-    const update = Object.fromEntries(Object.entries(req.body).filter(([k]) => allowed.includes(k)));
+    const update = pick(req.body, ['name', 'email', 'phone', 'city', 'subject', 'message', 'status', 'adminNotes']);
     const contact = await Contact.findByIdAndUpdate(req.params.id, update, { new: true, runValidators: true });
     if (!contact) return res.status(404).json({ message: 'Contact not found' });
     res.json(contact);

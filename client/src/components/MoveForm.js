@@ -1,13 +1,13 @@
 import React, { useEffect } from 'react';
 import Icon from './Icon';
-import { VEHICLES, HOUSE_TYPES, SUGGESTED_VEHICLE, calculateQuote, distanceBetween } from '../utils/pricing';
+import { VEHICLES, HOUSE_TYPES, SUGGESTED_VEHICLE, calculateQuote, distanceBetween, hasOwn } from '../utils/pricing';
 import { inr, todayISO } from '../utils/format';
 
 export const initialMove = (params = {}) => ({
   fromArea: params.from || '',
   toArea: params.to || '',
-  houseType: params.house && HOUSE_TYPES[params.house] !== undefined ? params.house : '2 BHK',
-  vehicleType: SUGGESTED_VEHICLE[params.house] || 'Tempo',
+  houseType: hasOwn(HOUSE_TYPES, params.house) ? params.house : '2 BHK',
+  vehicleType: hasOwn(SUGGESTED_VEHICLE, params.house) ? SUGGESTED_VEHICLE[params.house] : 'Tempo',
   movingDate: todayISO(),
   pickupFloor: 0,
   dropFloor: 0,

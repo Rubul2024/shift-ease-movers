@@ -8,7 +8,7 @@ const ICONS = ['home', 'office', 'car', 'box', 'warehouse', 'route', 'bike', 'so
 const BLANK = { title: '', description: '', icon: 'box', startingPrice: 0 };
 
 export default function AdminServices() {
-  const { data, loading, error, setData } = useFetch(() => api.services(), []);
+  const { data, loading, error, setData } = useFetch(() => api.services(true), []);
   const [editing, setEditing] = useState(null);
   const [msg, setMsg] = useState('');
   const services = data || [];

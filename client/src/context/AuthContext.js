@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import api, { tokenStore } from '../api';
+import api, { tokenStore, SESSION_EXPIRED_EVENT } from '../api';
 
 const AuthContext = createContext(null);
 
@@ -17,6 +17,12 @@ export function AuthProvider({ children }) {
       .then(({ user: u }) => setUser(u))
       .catch(() => tokenStore.clear())
       .finally(() => setReady(true));
+  }, []);
+
+  useEffect(() => {
+    const onExpired = () => setUser(null);
+    window.addEventListener(SESSION_EXPIRED_EVENT, onExpired);
+    return () => window.removeEventListener(SESSION_EXPIRED_EVENT, onExpired);
   }, []);
 
   const handleAuth = ({ token, user: u }) => {

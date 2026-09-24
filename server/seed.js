@@ -41,20 +41,25 @@ async function upsertUser({ email, ...rest }) {
 (async () => {
   await connectDB();
 
-  await upsertUser({
-    name: 'ShiftEase Admin',
-    email: (process.env.ADMIN_EMAIL || 'admin@shiftease.com').toLowerCase(),
-    password: process.env.ADMIN_PASSWORD || 'Admin@123',
-    phone: '9000000000',
-    role: 'admin',
-  });
-  await upsertUser({
-    name: 'Rahul Sharma',
-    email: 'customer@shiftease.com',
-    password: 'Customer@123',
-    phone: '9876543210',
-    role: 'customer',
-  });
+  const isProd = process.env.NODE_ENV === 'production';
+  const adminEmail = (process.env.ADMIN_EMAIL || 'admin@shiftease.com').toLowerCase();
+  const adminPassword = process.env.ADMIN_PASSWORD || 'Admin@123';
+  if (isProd && (!process.env.ADMIN_PASSWORD || adminPassword === 'Admin@123')) {
+    throw new Error('Set a strong ADMIN_PASSWORD in the environment before seeding production.');
+  }
+  // Demo customer is for local development and demos only.
+  const seedDemo = !isProd || process.env.SEED_DEMO_CUSTOMER === 'true';
+
+  await upsertUser({ name: 'ShiftEase Admin', email: adminEmail, password: adminPassword, phone: '9000000000', role: 'admin' });
+  if (seedDemo) {
+    await upsertUser({
+      name: 'Rahul Sharma',
+      email: 'customer@shiftease.com',
+      password: 'Customer@123',
+      phone: '9876543210',
+      role: 'customer',
+    });
+  }
 
   for (const a of areas) {
     await Area.findOneAndUpdate({ name: a.name, city: a.city }, a, { upsert: true, new: true, runValidators: true });
@@ -63,9 +68,9 @@ async function upsertUser({ email, ...rest }) {
     await Service.findOneAndUpdate({ title: s.title }, s, { upsert: true, new: true });
   }
 
-  console.log(`Seeded: 2 users, ${areas.length} areas, ${services.length} services`);
-  console.log('Admin    -> admin@shiftease.com / Admin@123');
-  console.log('Customer -> customer@shiftease.com / Customer@123');
+  console.log(`Seeded: ${seedDemo ? 2 : 1} users, ${areas.length} areas, ${services.length} services`);
+  console.log(`Admin    -> ${adminEmail}${isProd ? '' : ` / ${adminPassword}`}`);
+  if (seedDemo) console.log('Customer -> customer@shiftease.com / Customer@123');
   await mongoose.disconnect();
 })().catch((err) => {
   console.error(err);

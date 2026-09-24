@@ -2,6 +2,9 @@ const router = require('express').Router();
 const Area = require('../models/Area');
 const asyncHandler = require('../utils/asyncHandler');
 const { protect, adminOnly, optionalAuth } = require('../middleware/auth');
+const { pick, escapeRegex } = require('../utils/validate');
+
+const AREA_FIELDS = ['name', 'city', 'state', 'pincodes', 'lat', 'lng', 'vehicleTypes', 'availableCabs', 'isActive', 'notes'];
 
 // GET /api/areas  -> public list of serviceable areas (admins get all with ?all=true)
 router.get(
@@ -10,7 +13,7 @@ router.get(
   asyncHandler(async (req, res) => {
     const isAdmin = req.user && req.user.role === 'admin';
     const filter = isAdmin && req.query.all === 'true' ? {} : { isActive: true };
-    if (req.query.city) filter.city = new RegExp(`^${req.query.city}$`, 'i');
+    if (req.query.city) filter.city = new RegExp(`^${escapeRegex(req.query.city)}$`, 'i');
     const areas = await Area.find(filter).sort({ city: 1, name: 1 });
     res.json(areas);
   })
@@ -33,7 +36,7 @@ router.post(
   protect,
   adminOnly,
   asyncHandler(async (req, res) => {
-    const area = await Area.create(req.body);
+    const area = await Area.create(pick(req.body, AREA_FIELDS));
     res.status(201).json(area);
   })
 );
@@ -43,7 +46,7 @@ router.put(
   protect,
   adminOnly,
   asyncHandler(async (req, res) => {
-    const area = await Area.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+    const area = await Area.findByIdAndUpdate(req.params.id, pick(req.body, AREA_FIELDS), { new: true, runValidators: true });
     if (!area) return res.status(404).json({ message: 'Area not found' });
     res.json(area);
   })

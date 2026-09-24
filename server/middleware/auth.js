@@ -1,13 +1,16 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
+// server.js refuses to start in production without a strong JWT_SECRET.
+const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret_change_me';
+
 function readToken(req) {
   const header = req.headers.authorization || '';
   return header.startsWith('Bearer ') ? header.slice(7) : null;
 }
 
 async function loadUser(token) {
-  const decoded = jwt.verify(token, process.env.JWT_SECRET || 'dev_secret');
+  const decoded = jwt.verify(token, JWT_SECRET);
   return User.findById(decoded.id);
 }
 
@@ -43,4 +46,4 @@ function adminOnly(req, res, next) {
   res.status(403).json({ message: 'Admin access only' });
 }
 
-module.exports = { protect, optionalAuth, adminOnly };
+module.exports = { protect, optionalAuth, adminOnly, JWT_SECRET };

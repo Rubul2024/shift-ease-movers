@@ -4,18 +4,17 @@ const Area = require('../models/Area');
 const asyncHandler = require('../utils/asyncHandler');
 const { protect, adminOnly, optionalAuth } = require('../middleware/auth');
 const { calculateQuote, distanceBetween, VEHICLES, HOUSE_TYPES } = require('../utils/pricing');
+const { pick, httpError } = require('../utils/validate');
+
+const MOVE_FIELDS = ['vehicleType', 'houseType', 'pickupFloor', 'dropFloor', 'liftAvailable', 'premiumPacking', 'insurance'];
+const QUOTE_FIELDS = [...MOVE_FIELDS, 'name', 'email', 'phone', 'fromArea', 'toArea', 'movingDate', 'notes'];
 
 async function resolveAreas(fromArea, toArea) {
+  if (!fromArea || !toArea) throw httpError(400, 'Please choose a valid pickup and drop area');
   const [from, to] = await Promise.all([Area.findById(fromArea), Area.findById(toArea)]);
-  if (!from || !to) {
-    const err = new Error('Please choose a valid pickup and drop area');
-    err.status = 400;
-    throw err;
-  }
+  if (!from || !to) throw httpError(400, 'Please choose a valid pickup and drop area');
   if (!from.isActive || !to.isActive) {
-    const err = new Error('Sorry, we are not serving one of the selected areas right now');
-    err.status = 400;
-    throw err;
+    throw httpError(400, 'Sorry, we are not serving one of the selected areas right now');
   }
   return { from, to };
 }
@@ -28,8 +27,8 @@ router.post(
   '/estimate',
   asyncHandler(async (req, res) => {
     const { from, to } = await resolveAreas(req.body.fromArea, req.body.toArea);
-    const distanceKm = req.body.distanceKm || distanceBetween(from, to);
-    const breakdown = calculateQuote({ ...req.body, distanceKm });
+    const distanceKm = distanceBetween(from, to);
+    const breakdown = calculateQuote({ ...pick(req.body, MOVE_FIELDS), distanceKm });
     res.json({ distanceKm, breakdown });
   })
 );
@@ -40,10 +39,11 @@ router.post(
   optionalAuth,
   asyncHandler(async (req, res) => {
     const { from, to } = await resolveAreas(req.body.fromArea, req.body.toArea);
-    const distanceKm = req.body.distanceKm || distanceBetween(from, to);
-    const breakdown = calculateQuote({ ...req.body, distanceKm });
+    const distanceKm = distanceBetween(from, to);
+    const fields = pick(req.body, QUOTE_FIELDS);
+    const breakdown = calculateQuote({ ...fields, distanceKm });
     const quote = await Quote.create({
-      ...req.body,
+      ...fields,
       user: req.user ? req.user._id : undefined,
       distanceKm,
       breakdown,
@@ -95,7 +95,8 @@ router.delete(
   protect,
   adminOnly,
   asyncHandler(async (req, res) => {
-    await Quote.findByIdAndDelete(req.params.id);
+    const quote = await Quote.findByIdAndDelete(req.params.id);
+    if (!quote) return res.status(404).json({ message: 'Quote not found' });
     res.json({ message: 'Quote deleted' });
   })
 );

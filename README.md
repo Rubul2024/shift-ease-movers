@@ -25,6 +25,7 @@ More: public booking tracker (`/track/:id`), a customer dashboard (bookings with
 
 ```
 shiftease-movers/
+├── package.json            # root scripts: dev, build, start, seed
 ├── client/                 # React app (CRA)
 │   ├── public/
 │   └── src/
@@ -52,22 +53,17 @@ shiftease-movers/
 **Prerequisites:** Node.js 18+ and MongoDB running locally (or a MongoDB Atlas connection string).
 
 ```bash
-# 1. Clone
 git clone <your-repo-url> shiftease-movers
 cd shiftease-movers
 
-# 2. Backend
-cd server
-cp .env.example .env        # edit MONGO_URI / JWT_SECRET if needed
-npm install
-npm run seed                # admin, demo customer, 10 areas, 6 services
-npm run dev                 # API on http://localhost:5000
-
-# 3. Frontend (new terminal)
-cd client
-npm install
-npm start                   # http://localhost:3000 (proxies /api to :5000)
+cp server/.env.example server/.env   # edit MONGO_URI / JWT_SECRET if needed
+npm install                          # root tooling (concurrently)
+npm run install:all                  # server + client dependencies
+npm run seed                         # admin, demo customer, 10 areas, 6 services
+npm run dev                          # API on :5000 + website on http://localhost:3000
 ```
+
+`npm run dev` starts the API and the React dev server together. In development the React app forwards `/api` requests to `http://127.0.0.1:5000` (see `client/src/setupProxy.js`; override with `API_PROXY_TARGET`). If you only start the client, API calls answer with *"API server is not running"* instead of the old `Proxy error ... ECONNREFUSED`.
 
 ### Demo logins (created by `npm run seed`)
 
@@ -76,12 +72,29 @@ npm start                   # http://localhost:3000 (proxies /api to :5000)
 | Admin | admin@shiftease.com | Admin@123 |
 | Customer | customer@shiftease.com | Customer@123 |
 
-### Production build (single server)
+The login page shows these hints in development only. Set `REACT_APP_SHOW_DEMO_LOGINS=true` at build time to show them in a demo deployment.
+
+## Production deployment (single server)
+
+Express serves the React build and the API from one origin, so no CORS setup is needed.
 
 ```bash
-cd client && npm run build
-cd ../server && npm start   # Express serves client/build and the API on :5000
+npm run build     # installs production deps and builds client/build
+npm start         # NODE_ENV=production recommended; serves site + API on $PORT
 ```
+
+Environment variables (see `server/.env.example`):
+
+| Variable | Production notes |
+|---|---|
+| `NODE_ENV` | `production` |
+| `MONGO_URI` | MongoDB Atlas / managed connection string |
+| `JWT_SECRET` | **Required**, 32+ random characters. The server refuses to start without it |
+| `CLIENT_URL` | Only if the frontend is hosted on a different origin (comma-separated list) |
+| `TRUST_PROXY` | `1` behind Render/Railway/Heroku/Nginx so rate limiting sees real client IPs |
+| `ADMIN_EMAIL`, `ADMIN_PASSWORD` | Used by `npm run seed`. A non-default password is required in production |
+
+Production hardening built in: Helmet security headers with a Content-Security-Policy, gzip compression, rate limiting (stricter on login/register/contact), a JSON body size limit, whitelisted fields on every write, plain-string query parsing (no NoSQL operator injection), escaped search regexes, server-side price calculation that ignores client-supplied distance, hashed assets cached for a year while `index.html` is never cached, generic 500 messages, a `/api/health` check that includes database status, and graceful shutdown on SIGTERM.
 
 ## API reference
 

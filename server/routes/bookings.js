@@ -13,6 +13,9 @@ router.post(
   protect,
   asyncHandler(async (req, res) => {
     const b = req.body;
+    if (!b.pickupArea || !b.dropArea) {
+      return res.status(400).json({ message: 'Please choose pickup and drop areas' });
+    }
     const [pickup, drop] = await Promise.all([Area.findById(b.pickupArea), Area.findById(b.dropArea)]);
     if (!pickup || !drop || !pickup.isActive || !drop.isActive) {
       return res.status(400).json({ message: 'Cabs are not available in the selected area' });
@@ -118,7 +121,8 @@ router.put(
   protect,
   adminOnly,
   asyncHandler(async (req, res) => {
-    const { status, note } = req.body;
+    const { status } = req.body;
+    const note = typeof req.body.note === 'string' ? req.body.note : undefined;
     if (!Booking.STATUSES.includes(status)) return res.status(400).json({ message: 'Invalid status' });
     const booking = await Booking.findById(req.params.id);
     if (!booking) return res.status(404).json({ message: 'Booking not found' });
