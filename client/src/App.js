@@ -1,0 +1,87 @@
+import React, { useEffect } from 'react';
+import { Routes, Route, useLocation } from 'react-router-dom';
+import Navbar from './components/Navbar';
+import Footer from './components/Footer';
+import ProtectedRoute from './components/ProtectedRoute';
+import Home from './pages/Home';
+import Services from './pages/Services';
+import Areas from './pages/Areas';
+import Quote from './pages/Quote';
+import BookCab from './pages/BookCab';
+import Track from './pages/Track';
+import Contact from './pages/Contact';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import NotFound from './pages/NotFound';
+import CustomerDashboard from './pages/customer/CustomerDashboard';
+import AdminLayout from './pages/admin/AdminLayout';
+import AdminOverview from './pages/admin/AdminOverview';
+import AdminAreas from './pages/admin/AdminAreas';
+import AdminContacts from './pages/admin/AdminContacts';
+import AdminBookings from './pages/admin/AdminBookings';
+import AdminQuotes from './pages/admin/AdminQuotes';
+import AdminServices from './pages/admin/AdminServices';
+
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => window.scrollTo(0, 0), [pathname]);
+  return null;
+}
+
+export default function App() {
+  const { pathname } = useLocation();
+  const inApp = pathname.startsWith('/admin') || pathname.startsWith('/dashboard') || ['/login', '/register'].includes(pathname);
+
+  return (
+    <>
+      <ScrollToTop />
+      <Navbar />
+      <main>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/services" element={<Services />} />
+          <Route path="/areas" element={<Areas />} />
+          <Route path="/quote" element={<Quote />} />
+          <Route path="/track" element={<Track />} />
+          <Route path="/track/:bookingId" element={<Track />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route
+            path="/book"
+            element={
+              <ProtectedRoute role="customer">
+                <BookCab />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute role="customer">
+                <CustomerDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute role="admin">
+                <AdminLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<AdminOverview />} />
+            <Route path="areas" element={<AdminAreas />} />
+            <Route path="contacts" element={<AdminContacts />} />
+            <Route path="bookings" element={<AdminBookings />} />
+            <Route path="quotes" element={<AdminQuotes />} />
+            <Route path="services" element={<AdminServices />} />
+          </Route>
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </main>
+      {!inApp && <Footer />}
+    </>
+  );
+}
