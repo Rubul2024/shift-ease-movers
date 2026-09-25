@@ -90,6 +90,7 @@ export default function Footer() {
           <span style={{ display: 'flex', gap: 16 }}>
             <Link to="/privacy">Privacy Policy</Link>
             <Link to="/terms">Terms of Service</Link>
+            <Link to="/admin/login">Staff login</Link>
           </span>
         </div>
       </div>

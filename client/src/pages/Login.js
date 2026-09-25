@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import Icon from '../components/Icon';
 import { Alert, useTitle } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
@@ -22,19 +22,26 @@ export function AuthSide() {
   );
 }
 
-export default function Login() {
-  const { login } = useAuth();
+/**
+ * Customer login at /login; staff login at /admin/login (admin={true}).
+ * The admin variant asks the server to accept admin accounts only, so a customer
+ * account is refused before any session is created.
+ */
+export default function Login({ admin = false }) {
+  const { user: current, ready, login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  useTitle('Log in');
+  useTitle(admin ? 'Admin sign in' : 'Log in');
   const [form, setForm] = useState({ email: '', password: '' });
   const [state, setState] = useState({ loading: false, error: '' });
+
+  if (admin && ready && current?.role === 'admin') return <Navigate to="/admin" replace />;
 
   const submit = async (e) => {
     e.preventDefault();
     setState({ loading: true, error: '' });
     try {
-      const user = await login(form);
+      const user = await login(admin ? { ...form, role: 'admin' } : form);
       const fallback = user.role === 'admin' ? '/admin' : '/dashboard';
       // Don't send a customer to an admin page (or vice versa) they were bounced from.
       const from = location.state?.from;
@@ -51,9 +58,15 @@ export default function Login() {
       <div className="auth-form">
         <form className="card auth-card" onSubmit={submit} style={{ display: 'grid', gap: 16 }}>
           <div>
-            <h1>Welcome back</h1>
-            <p className="muted">Log in to book and manage your moves.</p>
+            <h1>{admin ? 'Admin sign in' : 'Welcome back'}</h1>
+            <p className="muted">{admin ? 'Staff access to bookings, areas, inquiries and quotes.' : 'Log in to book and manage your moves.'}</p>
           </div>
+          {location.state?.notice && <Alert type="info">{location.state.notice}</Alert>}
+          {admin && current && current.role !== 'admin' && (
+            <Alert type="info">
+              You're signed in as {current.email}, which is a customer account. Sign in with an admin account to continue.
+            </Alert>
+          )}
           <div className="field">
             <label htmlFor="l-email">Email</label>
             <input id="l-email" type="email" className="input" required autoComplete="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
@@ -71,14 +84,19 @@ export default function Login() {
           </button>
           {SHOW_DEMO_LOGINS && (
             <div className="demo-creds">
-              Demo customer: <b>customer@shiftease.com / Customer@123</b>
-              <br />
+              {!admin && <>Demo customer: <b>customer@shiftease.com / Customer@123</b><br /></>}
               Demo admin: <b>admin@shiftease.com / Admin@123</b>
             </div>
           )}
-          <p className="center small muted">
-            New here? <Link to="/register" state={location.state} className="text-blue" style={{ fontWeight: 700 }}>Create an account</Link>
-          </p>
+          {admin ? (
+            <p className="center small muted">
+              Not staff? <Link to="/login" className="text-blue" style={{ fontWeight: 700 }}>Customer log in</Link>
+            </p>
+          ) : (
+            <p className="center small muted">
+              New here? <Link to="/register" state={location.state} className="text-blue" style={{ fontWeight: 700 }}>Create an account</Link>
+            </p>
+          )}
         </form>
       </div>
     </div>
