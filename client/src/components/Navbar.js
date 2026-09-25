@@ -20,7 +20,9 @@ export default function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  useEffect(() => setOpen(false), [location.pathname]);
+  useEffect(() => {
+    setOpen(false);
+  }, [location.pathname]);
 
   return (
     <header className={`nav ${open ? 'open' : ''}`}>
