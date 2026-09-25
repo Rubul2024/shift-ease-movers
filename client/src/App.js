@@ -20,7 +20,14 @@ import Register from './pages/Register';
 import { ForgotPassword, ResetPassword } from './pages/ForgotPassword';
 import Receipt from './pages/Receipt';
 import NotFound from './pages/NotFound';
-import CustomerDashboard from './pages/customer/CustomerDashboard';
+import CustomerLayout from './pages/customer/CustomerLayout';
+import Overview from './pages/customer/Overview';
+import BookMove from './pages/customer/BookMove';
+import Bookings from './pages/customer/Bookings';
+import BookingDetail from './pages/customer/BookingDetail';
+import Quotes from './pages/customer/Quotes';
+import Profile from './pages/customer/Profile';
+import Support from './pages/customer/Support';
 import AdminLayout from './pages/admin/AdminLayout';
 import AdminOverview from './pages/admin/AdminOverview';
 import AdminAreas from './pages/admin/AdminAreas';
@@ -44,9 +51,10 @@ function ScrollToTop() {
 
 export default function App() {
   const { pathname } = useLocation();
+  // Dashboard and admin have their own app layout (sidebar + top bar): no public header/footer.
+  const inShell = pathname.startsWith('/admin') || pathname.startsWith('/dashboard');
   const inApp =
-    pathname.startsWith('/admin') ||
-    pathname.startsWith('/dashboard') ||
+    inShell ||
     pathname.startsWith('/receipt') ||
     pathname.startsWith('/reset-password') ||
     AUTH_PAGES.includes(pathname);
@@ -54,10 +62,10 @@ export default function App() {
   return (
     <>
       <ScrollToTop />
-      <Navbar />
+      {!inShell && <Navbar />}
       <main>
-        {/* Keyed by route: an error on one page keeps the navbar usable and clears when you navigate away. */}
-        <ErrorBoundary key={pathname}>
+        {/* An error on one page keeps the rest of the app usable and clears when you navigate away. */}
+        <ErrorBoundary resetKey={pathname}>
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/about" element={<About />} />
@@ -86,10 +94,18 @@ export default function App() {
               path="/dashboard"
               element={
                 <ProtectedRoute role="customer">
-                  <CustomerDashboard />
+                  <CustomerLayout />
                 </ProtectedRoute>
               }
-            />
+            >
+              <Route index element={<Overview />} />
+              <Route path="book" element={<BookMove />} />
+              <Route path="bookings" element={<Bookings />} />
+              <Route path="bookings/:id" element={<BookingDetail />} />
+              <Route path="quotes" element={<Quotes />} />
+              <Route path="profile" element={<Profile />} />
+              <Route path="support" element={<Support />} />
+            </Route>
             <Route
               path="/receipt/:id"
               element={

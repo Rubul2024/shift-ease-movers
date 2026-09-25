@@ -7,8 +7,13 @@ export const initialMove = (params = {}) => ({
   fromArea: params.from || '',
   toArea: params.to || '',
   houseType: hasOwn(HOUSE_TYPES, params.house) ? params.house : '2 BHK',
-  vehicleType: hasOwn(SUGGESTED_VEHICLE, params.house) ? SUGGESTED_VEHICLE[params.house] : 'Tempo',
-  movingDate: todayISO(),
+  // A vehicle from the link (e.g. "book again") wins; otherwise suggest one for the home size.
+  vehicleType: hasOwn(VEHICLES, params.vehicle)
+    ? params.vehicle
+    : hasOwn(SUGGESTED_VEHICLE, params.house)
+      ? SUGGESTED_VEHICLE[params.house]
+      : 'Tempo',
+  movingDate: /^\d{4}-\d{2}-\d{2}$/.test(params.date || '') && params.date >= todayISO() && params.date <= maxMoveDateISO() ? params.date : todayISO(),
   pickupFloor: 0,
   dropFloor: 0,
   liftAvailable: true,

@@ -8,6 +8,11 @@ export default class ErrorBoundary extends React.Component {
     return { error };
   }
 
+  // A changed resetKey (e.g. the route) clears a previous error without remounting healthy pages.
+  componentDidUpdate(prev) {
+    if (this.state.error && prev.resetKey !== this.props.resetKey) this.setState({ error: null });
+  }
+
   componentDidCatch(error, info) {
     console.error('UI error:', error, info.componentStack);
   }

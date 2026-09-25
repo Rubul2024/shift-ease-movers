@@ -1,40 +1,31 @@
 import React from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import Icon from '../../components/Icon';
-import { useAuth } from '../../context/AuthContext';
+import api from '../../api';
+import DashShell from '../../components/DashShell';
+import { useFetch } from '../../components/ui';
 
-const LINKS = [
-  { to: '/admin', label: 'Overview', icon: 'grid', end: true },
-  { to: '/admin/areas', label: 'Service Areas', icon: 'pin' },
-  { to: '/admin/contacts', label: 'Contacts', icon: 'inbox' },
-  { to: '/admin/bookings', label: 'Bookings', icon: 'truck' },
-  { to: '/admin/quotes', label: 'Quotes', icon: 'file' },
-  { to: '/admin/services', label: 'Services', icon: 'box' },
-  { to: '/admin/customers', label: 'Customers', icon: 'users' },
-  { to: '/admin/subscribers', label: 'Newsletter', icon: 'mail' },
-];
+const BADGES_REFRESH_MS = 60000;
 
 export default function AdminLayout() {
-  const { logout } = useAuth();
-  const navigate = useNavigate();
+  // Live counts for the sidebar badges (new inquiries / new quote leads).
+  const { data: s } = useFetch(() => api.stats(), [], { interval: BADGES_REFRESH_MS });
+
+  const links = [
+    { to: '/admin', label: 'Overview', icon: 'grid', end: true },
+    { to: '/admin/bookings', label: 'Bookings', icon: 'truck', badge: s?.activeBookings },
+    { to: '/admin/contacts', label: 'Contacts', icon: 'inbox', badge: s?.newContacts },
+    { to: '/admin/quotes', label: 'Quotes', icon: 'file', badge: s?.newQuotes },
+    { to: '/admin/areas', label: 'Service Areas', icon: 'pin' },
+    { to: '/admin/services', label: 'Services', icon: 'box' },
+    { to: '/admin/customers', label: 'Customers', icon: 'users' },
+    { to: '/admin/subscribers', label: 'Newsletter', icon: 'mail' },
+  ];
+
   return (
-    <div className="dash">
-      <aside className="side">
-        <div className="side-label">Admin panel</div>
-        {LINKS.map((l) => (
-          <NavLink key={l.to} to={l.to} end={l.end}>
-            <Icon name={l.icon} size={18} /> {l.label}
-          </NavLink>
-        ))}
-        <div className="side-label">Account</div>
-        <NavLink to="/" end><Icon name="globe" size={18} /> View website</NavLink>
-        <button className="side-link" onClick={() => { logout(); navigate('/'); }}>
-          <Icon name="logout" size={18} /> Log out
-        </button>
-      </aside>
-      <div className="dash-main">
-        <Outlet />
-      </div>
-    </div>
+    <DashShell
+      label="Admin panel"
+      links={links}
+      menuItems={[{ to: '/', label: 'View website', icon: 'globe' }]}
+      titleFor={() => 'Admin panel'}
+    />
   );
 }

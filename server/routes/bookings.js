@@ -6,6 +6,7 @@ const { protect, adminOnly } = require('../middleware/auth');
 const { calculateQuote, distanceBetween, TIME_SLOTS } = require('../utils/pricing');
 const { escapeRegex, parseMoveDate } = require('../utils/validate');
 const { sendMail, templates, siteUrl } = require('../utils/mailer');
+const { slotAvailability, dayKey } = require('../utils/availability');
 
 const POPULATE = ['pickupArea dropArea', 'name city state'];
 
@@ -27,12 +28,19 @@ router.post(
         message: `${b.vehicleType} is not available in ${pickup.name}. Available: ${pickup.vehicleTypes.join(', ')}`,
       });
     }
-    if (pickup.availableCabs < 1) {
-      return res.status(409).json({ message: `All cabs in ${pickup.name} are busy. Please try another slot.` });
-    }
     const date = parseMoveDate(b.movingDate);
     const timeSlot = b.timeSlot === undefined ? TIME_SLOTS[0] : b.timeSlot;
     if (!TIME_SLOTS.includes(timeSlot)) return res.status(400).json({ message: 'Please choose a valid time slot' });
+    const day = dayKey(date);
+    const slotInfo = (await slotAvailability(pickup, day)).find((s) => s.slot === timeSlot);
+    if (!slotInfo.available) {
+      return res.status(409).json({
+        message:
+          slotInfo.reason === 'Fully booked'
+            ? `All cabs in ${pickup.name} are booked for ${timeSlot}. Please pick another slot or date.`
+            : `The ${timeSlot} slot is no longer available for this date. Please pick a later slot.`,
+      });
+    }
 
     const distanceKm = distanceBetween(pickup, drop);
     const breakdown = calculateQuote({ ...b, distanceKm });
@@ -60,6 +68,19 @@ router.post(
       status: 'Confirmed',
       history: [{ status: 'Confirmed', note: 'Booking confirmed instantly online' }],
     });
+    // Customers may race for the last cab. First come, first served: keep this booking only if it fits
+    // within capacity counting bookings created before it (ObjectIds increase over time).
+    const ahead = await Booking.countDocuments({
+      pickupArea: pickup._id,
+      movingDate: booking.movingDate,
+      timeSlot,
+      status: { $ne: 'Cancelled' },
+      _id: { $lte: booking._id },
+    });
+    if (ahead > (pickup.availableCabs || 0)) {
+      await booking.deleteOne();
+      return res.status(409).json({ message: `The last cab for ${timeSlot} was just taken. Please pick another slot.` });
+    }
     await booking.populate(...POPULATE);
     sendMail({ to: req.user.email, ...templates.bookingConfirmed(booking, req.user, siteUrl(req)) });
     res.status(201).json(booking);
@@ -81,7 +102,7 @@ router.get(
   asyncHandler(async (req, res) => {
     const booking = await Booking.findOne({ bookingId: String(req.params.bookingId).trim().toUpperCase() })
       .populate(...POPULATE)
-      .select('bookingId pickupArea dropArea movingDate timeSlot vehicleType houseType status history createdAt');
+      .select('bookingId pickupArea dropArea movingDate timeSlot vehicleType houseType status history createdAt updatedAt');
     if (!booking) return res.status(404).json({ message: 'No booking found with this ID' });
     res.json(booking);
   })

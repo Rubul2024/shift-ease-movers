@@ -30,11 +30,15 @@ const services = [
   { title: 'Intercity Moves', icon: 'route', startingPrice: 9999, description: 'Dedicated or shared trucks to 120+ cities with live tracking and a fixed delivery window.' },
 ];
 
+// Creates the user only if missing. Existing accounts (and their passwords) are never overwritten,
+// unless SEED_RESET_PASSWORDS=true is set explicitly.
 async function upsertUser({ email, ...rest }) {
-  let user = await User.findOne({ email });
-  if (!user) user = new User({ email, ...rest });
-  else Object.assign(user, rest);
-  await user.save();
+  const user = await User.findOne({ email });
+  if (!user) return User.create({ email, ...rest });
+  if (process.env.SEED_RESET_PASSWORDS === 'true') {
+    Object.assign(user, rest);
+    await user.save();
+  }
   return user;
 }
 

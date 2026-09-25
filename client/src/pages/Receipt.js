@@ -40,7 +40,7 @@ export default function Receipt() {
     <section className="section receipt-page">
       <div className="container" style={{ maxWidth: 820 }}>
         <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', gap: 10, marginBottom: 18, flexWrap: 'wrap' }}>
-          <Link to={isAdmin ? '/admin/bookings' : '/dashboard'} className="btn btn-ghost">← Back</Link>
+          <Link to={isAdmin ? '/admin/bookings' : `/dashboard/bookings/${b._id}`} className="btn btn-ghost">← Back</Link>
           <button className="btn btn-primary" onClick={() => window.print()}><Icon name="printer" size={17} /> Print / Save as PDF</button>
         </div>
 

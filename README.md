@@ -23,7 +23,8 @@ More: public booking tracker (`/track/:id`), a customer dashboard (bookings with
 |---|---|
 | Pages | Home, Services, Service Areas, Get a Quote, Book a Cab, Track, About, FAQ, Contact, Privacy Policy, Terms of Service, 404. Each page sets its own `<title>` and meta description |
 | Accounts | Sign up, log in (one form, role decides the destination), **forgot / reset password by email**, profile edit and **password change** (other sessions are signed out) |
-| Customers | My Moves dashboard with bookings, quotes and profile. **Printable receipt / invoice** for every booking (`/receipt/:id`, print or save as PDF) |
+| Customer dashboard | Full app layout (sidebar + top bar, no website header/footer, mobile drawer): Overview with **quick-book widget**, next move with live timeline, KPIs; **Book a move** inside the dashboard; My bookings (filters, search, book again); live **booking detail** (timeline, next step, price breakdown, activity, cancel, share tracking link); quotes; profile & security; help & support. **Printable receipt / invoice** for every booking (`/receipt/:id`) |
+| Real-time booking | **Live slot availability**: each area runs `availableCabs` moves per time slot per day; the form shows cabs left per slot, closes full or already-started slots and the server enforces it (first come, first served, no overbooking). Price updates instantly and is **confirmed live by the server**. Booking pages, the dashboard and `/track` refresh automatically, so admin status changes appear without reloading |
 | Leads | Contact form (pre-filled from service links and booking pages), quote form, **working newsletter sign-up**, click-to-call / mailto / map links, floating call (and optional WhatsApp) button on phones |
 | Email | Booking confirmation, booking status updates, quote copy to the customer, inquiry auto-reply, new-inquiry alert to the office, password reset (SMTP, optional) |
 | Admin | Overview KPIs (clickable), areas, contacts, bookings (search, status filter, status note for the customer, CSV export, receipts), quotes (search, filter, CSV), services (show/hide), **customers** (bookings and spend, CSV), **newsletter subscribers** (CSV) |
@@ -110,6 +111,10 @@ Environment variables (see `server/.env.example`):
 | `APP_URL` | Public site URL used in email links, e.g. `https://shiftease.in` |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM` | Outgoing email. Without `SMTP_HOST`, emails are printed to the console in development and skipped in production. **Password reset needs SMTP in production** |
 | `ADMIN_NOTIFY_EMAIL` | Inbox that receives new website inquiries |
+| `BUSINESS_TZ` | Time zone for "today" and slot cut-offs (default `Asia/Kolkata`), so a UTC server behaves correctly |
+| `SEED_RESET_PASSWORDS` | `npm run seed` never overwrites existing users; set `true` to reset the seeded admin/demo passwords |
+
+> **First run:** the Book page needs service areas. Run `npm run seed` once against a new database (it's safe to re-run), or add areas in **Admin → Service Areas**.
 
 Production hardening built in: Helmet security headers with a Content-Security-Policy, gzip compression, rate limiting (stricter on login/register/contact), a JSON body size limit, whitelisted fields on every write, plain-string query parsing (no NoSQL operator injection), escaped search regexes, server-side price calculation that ignores client-supplied distance, hashed assets cached for a year while `index.html` is never cached, generic 500 messages, a `/api/health` check that includes database status, and graceful shutdown on SIGTERM.
 
@@ -125,6 +130,7 @@ Production hardening built in: Helmet security headers with a Content-Security-P
 | POST | `/api/auth/reset-password/:token` | public | Set new password → JWT |
 | GET | `/api/areas` | public | Live areas (`?all=true` for admin) |
 | GET | `/api/areas/check?pincode=` | public | Is a pincode serviceable? |
+| GET | `/api/areas/:id/availability?date=` | public | Live cabs left per time slot |
 | POST/PUT/DELETE | `/api/areas/:id` | admin | Define / maintain areas |
 | POST | `/api/contacts` | public | Submit inquiry |
 | GET/PUT/DELETE | `/api/contacts/:id` | admin | View / maintain contacts (`?status=&q=`) |

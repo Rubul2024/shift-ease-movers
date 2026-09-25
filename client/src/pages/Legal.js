@@ -54,7 +54,7 @@ export function Privacy() {
         ['Cookies and local storage', 'We do not use advertising or tracking cookies. When you log in, your browser stores a session token in local storage so you stay signed in. Logging out removes it.'],
         ['Data retention', 'We keep booking records for as long as needed for accounting and legal purposes (generally up to 8 years). Inquiries and quotes that did not lead to a booking are deleted within 24 months. You can ask us to delete your account at any time.'],
         ['Security', 'Passwords are hashed and never stored in plain text. Data is sent over encrypted connections, and access to customer data is limited to staff who need it to serve you.'],
-        ['Your rights', 'You can ask to access, correct or delete your personal data, withdraw consent for marketing, or raise a grievance. You can update your name and mobile number yourself under My Moves → Profile. For anything else, contact us using the details below and we will respond within 30 days.'],
+        ['Your rights', 'You can ask to access, correct or delete your personal data, withdraw consent for marketing, or raise a grievance. You can update your name and mobile number yourself in your dashboard under Profile & security. For anything else, contact us using the details below and we will respond within 30 days.'],
         ['Changes to this policy', 'If we change this policy we will update the date at the top of this page. Significant changes will be communicated by email to registered customers.'],
       ]}
     />

@@ -62,6 +62,7 @@ const api = {
   resetPassword: (token, password) => request(`/auth/reset-password/${encodeURIComponent(token)}`, { method: 'POST', body: { password } }),
   // areas
   areas: (all = false) => request(`/areas${all ? '?all=true' : ''}`),
+  availability: (areaId, date) => request(`/areas/${areaId}/availability?date=${encodeURIComponent(date)}`),
   checkPincode: (pincode) => request(`/areas/check?pincode=${encodeURIComponent(pincode)}`),
   createArea: (body) => request('/areas', { method: 'POST', body }),
   updateArea: (id, body) => request(`/areas/${id}`, { method: 'PUT', body }),

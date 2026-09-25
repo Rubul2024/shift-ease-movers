@@ -2,11 +2,16 @@ import React, { useCallback, useEffect, useState } from 'react';
 import Icon from './Icon';
 import { STATUS_TONE, dateTime } from '../utils/format';
 
-/** Fetch helper: const { data, loading, error, reload, setData } = useFetch(api.areas) */
-export function useFetch(fn, deps = []) {
+/**
+ * Fetch helper: const { data, loading, error, reload, setData, updatedAt } = useFetch(() => api.areas(), [])
+ * Pass { interval: ms } to keep the data live: it refreshes silently in the background
+ * (no spinner) and pauses while the browser tab is hidden.
+ */
+export function useFetch(fn, deps = [], { interval = 0 } = {}) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [updatedAt, setUpdatedAt] = useState(null);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const load = useCallback(fn, deps);
 
@@ -14,7 +19,10 @@ export function useFetch(fn, deps = []) {
     setLoading(true);
     setError('');
     return load()
-      .then(setData)
+      .then((d) => {
+        setData(d);
+        setUpdatedAt(new Date());
+      })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }, [load]);
@@ -23,7 +31,42 @@ export function useFetch(fn, deps = []) {
     reload();
   }, [reload]);
 
-  return { data, loading, error, reload, setData };
+  useEffect(() => {
+    if (!interval) return undefined;
+    let cancelled = false;
+    const refresh = () => {
+      if (document.hidden) return;
+      load()
+        .then((d) => {
+          if (cancelled) return;
+          setData(d);
+          setError('');
+          setUpdatedAt(new Date());
+        })
+        .catch(() => {
+          /* keep showing the last good data; the next tick retries */
+        });
+    };
+    const timer = setInterval(refresh, interval);
+    document.addEventListener('visibilitychange', refresh);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', refresh);
+    };
+  }, [load, interval]);
+
+  return { data, loading, error, reload, setData, updatedAt };
+}
+
+/** Small "● Live · updated 10:42:05" indicator for auto-refreshing views. */
+export function LiveBadge({ updatedAt }) {
+  return (
+    <span className="live-badge" title="Refreshes automatically">
+      <span className="live-dot" /> Live
+      {updatedAt && <span className="muted"> · updated {updatedAt.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>}
+    </span>
+  );
 }
 
 const BASE_TITLE = 'ShiftEase Movers';
