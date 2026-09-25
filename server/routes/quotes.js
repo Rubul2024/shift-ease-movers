@@ -4,7 +4,8 @@ const Area = require('../models/Area');
 const asyncHandler = require('../utils/asyncHandler');
 const { protect, adminOnly, optionalAuth } = require('../middleware/auth');
 const { calculateQuote, distanceBetween, VEHICLES, HOUSE_TYPES } = require('../utils/pricing');
-const { pick, httpError } = require('../utils/validate');
+const { pick, httpError, escapeRegex, parseMoveDate } = require('../utils/validate');
+const { sendMail, templates, siteUrl } = require('../utils/mailer');
 
 const MOVE_FIELDS = ['vehicleType', 'houseType', 'pickupFloor', 'dropFloor', 'liftAvailable', 'premiumPacking', 'insurance'];
 const QUOTE_FIELDS = [...MOVE_FIELDS, 'name', 'email', 'phone', 'fromArea', 'toArea', 'movingDate', 'notes'];
@@ -41,6 +42,7 @@ router.post(
     const { from, to } = await resolveAreas(req.body.fromArea, req.body.toArea);
     const distanceKm = distanceBetween(from, to);
     const fields = pick(req.body, QUOTE_FIELDS);
+    fields.movingDate = parseMoveDate(fields.movingDate);
     const breakdown = calculateQuote({ ...fields, distanceKm });
     const quote = await Quote.create({
       ...fields,
@@ -49,7 +51,9 @@ router.post(
       breakdown,
       status: 'New',
     });
-    res.status(201).json(await quote.populate('fromArea toArea', 'name city'));
+    await quote.populate('fromArea toArea', 'name city');
+    sendMail({ to: quote.email, ...templates.quoteReady(quote, siteUrl(req)) });
+    res.status(201).json(quote);
   })
 );
 
@@ -71,7 +75,13 @@ router.get(
   protect,
   adminOnly,
   asyncHandler(async (req, res) => {
-    res.json(await Quote.find().populate('fromArea toArea', 'name city').sort({ createdAt: -1 }));
+    const filter = {};
+    if (req.query.status) filter.status = req.query.status;
+    if (req.query.q) {
+      const rx = new RegExp(escapeRegex(req.query.q.trim()), 'i');
+      filter.$or = [{ name: rx }, { email: rx }, { phone: rx }];
+    }
+    res.json(await Quote.find(filter).populate('fromArea toArea', 'name city').sort({ createdAt: -1 }).limit(500));
   })
 );
 
@@ -82,7 +92,7 @@ router.put(
   asyncHandler(async (req, res) => {
     const quote = await Quote.findByIdAndUpdate(
       req.params.id,
-      { status: req.body.status },
+      pick(req.body, ['status', 'notes']),
       { new: true, runValidators: true }
     ).populate('fromArea toArea', 'name city');
     if (!quote) return res.status(404).json({ message: 'Quote not found' });

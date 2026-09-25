@@ -37,6 +37,9 @@ export function AuthProvider({ children }) {
     isAdmin: user?.role === 'admin',
     login: async (creds) => handleAuth(await api.login(creds)),
     register: async (data) => handleAuth(await api.register(data)),
+    // After a password change/reset the server issues a new token (old ones stop working).
+    setSession: handleAuth,
+    updateUser: setUser,
     logout: () => {
       tokenStore.clear();
       setUser(null);

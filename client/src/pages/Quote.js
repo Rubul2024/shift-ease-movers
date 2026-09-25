@@ -1,18 +1,23 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import api from '../api';
 import Icon from '../components/Icon';
-import { useFetch, PageHeader, Alert } from '../components/ui';
+import { useFetch, useTitle, PageHeader, Alert } from '../components/ui';
 import { MoveFields, PriceSummary, initialMove, useMovePrice } from '../components/MoveForm';
 import { useAuth } from '../context/AuthContext';
 import { inr, date } from '../utils/format';
 
 export default function Quote() {
+  useTitle('Get a quote', 'Instant, itemised moving quote for your home or office. See your price update live, no sign-up needed.');
   const [params] = useSearchParams();
   const { user } = useAuth();
   const { data: areas } = useFetch(() => api.areas(), []);
   const [move, setMove] = useState(() => initialMove(Object.fromEntries(params)));
   const [contact, setContact] = useState({ name: user?.name || '', email: user?.email || '', phone: user?.phone || '' });
+  // The session may finish loading after first render; fill in any blanks once it does.
+  useEffect(() => {
+    if (user) setContact((c) => ({ name: c.name || user.name, email: c.email || user.email, phone: c.phone || user.phone || '' }));
+  }, [user]);
   const [status, setStatus] = useState({ loading: false, error: '', saved: null });
   const price = useMovePrice(move, areas);
 

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import api from '../api';
 import Icon from '../components/Icon';
-import { useFetch, PageHeader, Alert, StatusTimeline } from '../components/ui';
+import { useFetch, useTitle, PageHeader, Alert, StatusTimeline } from '../components/ui';
 import { MoveFields, PriceSummary, initialMove, useMovePrice } from '../components/MoveForm';
 import { useAuth } from '../context/AuthContext';
 import { TIME_SLOTS } from '../utils/pricing';
@@ -10,6 +10,7 @@ import { inr, date } from '../utils/format';
 
 // Customers book a moving cab instantly — confirmation and booking ID are returned immediately.
 export default function BookCab() {
+  useTitle('Book a moving cab');
   const [params] = useSearchParams();
   const { user } = useAuth();
   const { data: areas } = useFetch(() => api.areas(), []);
@@ -27,6 +28,7 @@ export default function BookCab() {
 
   const submit = async (e) => {
     e.preventDefault();
+    if (move.fromArea === move.toArea && !window.confirm('Pickup and drop are in the same area. Continue?')) return;
     setState({ loading: true, error: '', booking: null });
     try {
       const booking = await api.book({ ...move, ...details });
@@ -66,6 +68,7 @@ export default function BookCab() {
               </div>
               <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                 <Link to={`/track/${b.bookingId}`} className="btn btn-primary">Track this move <Icon name="arrow" size={17} /></Link>
+                <Link to={`/receipt/${b._id}`} className="btn btn-outline"><Icon name="printer" size={17} /> Receipt</Link>
                 <Link to="/dashboard" className="btn btn-outline">Go to My Moves</Link>
               </div>
             </div>

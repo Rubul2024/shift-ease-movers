@@ -6,11 +6,11 @@ import { useAuth } from '../context/AuthContext';
 import { initials } from '../utils/format';
 
 const LINKS = [
-  { to: '/', label: 'Home', end: true },
   { to: '/services', label: 'Services' },
   { to: '/areas', label: 'Service Areas' },
   { to: '/quote', label: 'Get a Quote' },
   { to: '/track', label: 'Track' },
+  { to: '/about', label: 'About' },
   { to: '/contact', label: 'Contact' },
 ];
 

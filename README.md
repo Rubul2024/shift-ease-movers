@@ -17,6 +17,20 @@ MERN stack capstone project: an online application for a packers & movers compan
 
 More: public booking tracker (`/track/:id`), a customer dashboard (bookings with timeline, cancellation, quotes), an admin overview with KPIs, admin booking status updates (the customer sees them live), and admin quote and service management. The layout is responsive for mobile, tablet and desktop.
 
+### Company-site features
+
+| Area | What's included |
+|---|---|
+| Pages | Home, Services, Service Areas, Get a Quote, Book a Cab, Track, About, FAQ, Contact, Privacy Policy, Terms of Service, 404. Each page sets its own `<title>` and meta description |
+| Accounts | Sign up, log in (one form, role decides the destination), **forgot / reset password by email**, profile edit and **password change** (other sessions are signed out) |
+| Customers | My Moves dashboard with bookings, quotes and profile. **Printable receipt / invoice** for every booking (`/receipt/:id`, print or save as PDF) |
+| Leads | Contact form (pre-filled from service links and booking pages), quote form, **working newsletter sign-up**, click-to-call / mailto / map links, floating call (and optional WhatsApp) button on phones |
+| Email | Booking confirmation, booking status updates, quote copy to the customer, inquiry auto-reply, new-inquiry alert to the office, password reset (SMTP, optional) |
+| Admin | Overview KPIs (clickable), areas, contacts, bookings (search, status filter, status note for the customer, CSV export, receipts), quotes (search, filter, CSV), services (show/hide), **customers** (bookings and spend, CSV), **newsletter subscribers** (CSV) |
+| SEO | Open Graph tags, `robots.txt` (keeps admin, dashboard and receipt pages out of search), web manifest |
+
+Company phone, email, WhatsApp, GSTIN and social links are set in one place: `client/src/config.js`. Each value can be overridden at build time with a `REACT_APP_*` variable (for example `REACT_APP_PHONE`, `REACT_APP_WHATSAPP=919876543210`, `REACT_APP_GSTIN`, `REACT_APP_FACEBOOK_URL`). Social icons and the WhatsApp button only appear when their value is set.
+
 ## Tech stack
 
 - **Frontend:** React 18 (Create React App), React Router v6, plain CSS (no UI library), inline SVG icons and illustrations
@@ -93,6 +107,9 @@ Environment variables (see `server/.env.example`):
 | `CLIENT_URL` | Only if the frontend is hosted on a different origin (comma-separated list) |
 | `TRUST_PROXY` | `1` behind Render/Railway/Heroku/Nginx so rate limiting sees real client IPs |
 | `ADMIN_EMAIL`, `ADMIN_PASSWORD` | Used by `npm run seed`. A non-default password is required in production |
+| `APP_URL` | Public site URL used in email links, e.g. `https://shiftease.in` |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM` | Outgoing email. Without `SMTP_HOST`, emails are printed to the console in development and skipped in production. **Password reset needs SMTP in production** |
+| `ADMIN_NOTIFY_EMAIL` | Inbox that receives new website inquiries |
 
 Production hardening built in: Helmet security headers with a Content-Security-Policy, gzip compression, rate limiting (stricter on login/register/contact), a JSON body size limit, whitelisted fields on every write, plain-string query parsing (no NoSQL operator injection), escaped search regexes, server-side price calculation that ignores client-supplied distance, hashed assets cached for a year while `index.html` is never cached, generic 500 messages, a `/api/health` check that includes database status, and graceful shutdown on SIGTERM.
 
@@ -102,7 +119,10 @@ Production hardening built in: Helmet security headers with a Content-Security-P
 |---|---|---|---|
 | POST | `/api/auth/register` | public | Customer sign-up → JWT |
 | POST | `/api/auth/login` | public | Login (optional `role` check) → JWT |
-| GET | `/api/auth/me` | user | Current user |
+| GET/PUT | `/api/auth/me` | user | Current user / update name & phone |
+| PUT | `/api/auth/password` | user | Change password → new JWT (old sessions revoked) |
+| POST | `/api/auth/forgot-password` | public | Email a reset link (1 hour) |
+| POST | `/api/auth/reset-password/:token` | public | Set new password → JWT |
 | GET | `/api/areas` | public | Live areas (`?all=true` for admin) |
 | GET | `/api/areas/check?pincode=` | public | Is a pincode serviceable? |
 | POST/PUT/DELETE | `/api/areas/:id` | admin | Define / maintain areas |
@@ -117,10 +137,14 @@ Production hardening built in: Helmet security headers with a Content-Security-P
 | GET | `/api/bookings/mine` | user | My bookings |
 | GET | `/api/bookings/track/:bookingId` | public | Tracking |
 | PUT | `/api/bookings/:id/cancel` | owner | Cancel (before pickup) |
-| GET | `/api/bookings` | admin | All bookings (`?status=`) |
+| GET | `/api/bookings` | admin | All bookings (`?status=&q=`) |
+| GET | `/api/bookings/:id` | owner / admin | Full booking for the receipt |
 | PUT | `/api/bookings/:id/status` | admin | Update status (adds to history) |
 | GET/POST/PUT/DELETE | `/api/services` | public / admin | Services catalogue |
 | GET | `/api/stats` | admin | Dashboard KPIs |
+| POST | `/api/newsletter` | public | Newsletter sign-up |
+| GET/DELETE | `/api/newsletter/:id` | admin | Subscribers |
+| GET | `/api/users` | admin | Customers with booking count and spend (`?q=`) |
 
 ## Pricing model (INR)
 
@@ -153,5 +177,3 @@ git push -u origin main
 | ![Quote](docs/screenshots/quote.png) | ![Booking confirmed](docs/screenshots/booking-confirmed.png) |
 | ![Service areas](docs/screenshots/service-areas.png) | ![Customer dashboard](docs/screenshots/customer-dashboard.png) |
 | ![Admin areas](docs/screenshots/admin-areas.png) | ![Admin contacts](docs/screenshots/admin-contacts.png) |
-#   s h i f t - e a s e - m o v e r s  
- 

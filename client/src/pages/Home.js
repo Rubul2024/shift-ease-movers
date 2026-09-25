@@ -4,35 +4,32 @@ import api from '../api';
 import Icon from '../components/Icon';
 import HeroArt from '../components/HeroArt';
 import NetworkMap from '../components/NetworkMap';
-import { useFetch, StatusTimeline } from '../components/ui';
+import { useFetch, useTitle, StatusTimeline } from '../components/ui';
+import { FaqList } from './Faq';
+import { serviceCta } from './Services';
+import { FAQS } from '../data/faqs';
+import { SITE } from '../config';
 import { HOUSE_TYPES } from '../utils/pricing';
 import { inr } from '../utils/format';
 
+// Each tile opens the quote form pre-filled, or an inquiry for services priced case by case.
 const MOVE_TYPES = [
-  { icon: 'home', label: 'Apartments & Villas' },
-  { icon: 'office', label: 'Offices & Co-working' },
-  { icon: 'car', label: 'Cars' },
-  { icon: 'bike', label: 'Bikes & Scooters' },
-  { icon: 'sofa', label: 'Furniture Only' },
-  { icon: 'piano', label: 'Pianos & Fragile' },
-  { icon: 'plant', label: 'Plants & Décor' },
-  { icon: 'warehouse', label: 'Storage Pickups' },
-  { icon: 'layers', label: 'Student Moves' },
-  { icon: 'globe', label: 'Intercity Moves' },
+  { icon: 'home', label: 'Apartments & Villas', to: '/quote?house=3+BHK' },
+  { icon: 'office', label: 'Offices & Co-working', to: '/quote?house=Office' },
+  { icon: 'car', label: 'Cars', to: '/contact?subject=Vehicle+transport' },
+  { icon: 'bike', label: 'Bikes & Scooters', to: '/contact?subject=Vehicle+transport' },
+  { icon: 'sofa', label: 'Furniture Only', to: '/quote?house=1+RK' },
+  { icon: 'piano', label: 'Pianos & Fragile', to: '/contact?subject=Other' },
+  { icon: 'plant', label: 'Plants & Décor', to: '/quote?house=1+RK' },
+  { icon: 'warehouse', label: 'Storage Pickups', to: '/contact?subject=Storage' },
+  { icon: 'layers', label: 'Student Moves', to: '/quote?house=1+RK' },
+  { icon: 'globe', label: 'Intercity Moves', to: '/quote' },
 ];
 
 const TESTIMONIALS = [
   { name: 'Ananya R.', role: '2 BHK · Koramangala → Whitefield', text: 'The quote on the website was exactly what I paid. The team packed our kitchen in under two hours and nothing broke.' },
   { name: 'Vikram S.', role: 'Office · 40 desks · Andheri', text: 'Booked a Container on Thursday night, moved over the weekend, team was working on Monday. Live tracking kept my boss calm.' },
   { name: 'Meera & Arjun', role: '3 BHK · Pune → Hyderabad', text: 'Loved seeing each step of the move on the tracker. Premium packing was worth it for our glass dining table.' },
-];
-
-const FAQS = [
-  { q: 'How is my moving quote calculated?', a: 'We combine a vehicle base fare, distance between your pickup and drop areas, labour & packing for your home size, stair charges if there is no lift, and optional premium packing or insurance. GST (18%) is shown separately — no hidden costs.' },
-  { q: 'Can I book a moving cab for today?', a: 'Yes. If cabs are available in your pickup area you can book instantly for today or any future date and get a booking ID immediately.' },
-  { q: 'Which areas do you serve?', a: 'See the Service Areas page for the live list. Our operations team adds new areas regularly, and you can check any pincode instantly.' },
-  { q: 'How do I track my move?', a: 'Enter your booking ID on the Track page, or open My Moves after logging in. Every status update from our team shows up with a timestamp.' },
-  { q: 'Can I cancel a booking?', a: 'You can cancel free of charge from My Moves until a vehicle has picked up your goods.' },
 ];
 
 function QuickBar({ areas }) {
@@ -90,7 +87,7 @@ function QuickBar({ areas }) {
             </button>
           </form>
         ) : (
-          <form className="quick-row track" onSubmit={(e) => { e.preventDefault(); if (trackId.trim()) navigate(`/track/${trackId.trim()}`); }}>
+          <form className="quick-row track" onSubmit={(e) => { e.preventDefault(); if (trackId.trim()) navigate(`/track/${trackId.trim().toUpperCase()}`); }}>
             <div className="field">
               <label htmlFor="qb-track">Booking ID</label>
               <input id="qb-track" className="input" placeholder="e.g. SE12345ABCDE" value={trackId} onChange={(e) => setTrackId(e.target.value)} />
@@ -108,7 +105,7 @@ function QuickBar({ areas }) {
 export default function Home() {
   const { data: areas } = useFetch(() => api.areas(), []);
   const { data: services } = useFetch(() => api.services(), []);
-  const [openFaq, setOpenFaq] = useState(0);
+  useTitle('', 'Instant moving quotes and online cab booking. Verified packers, GPS-tracked trucks and fixed prices for home and office moves across India.');
 
   const activeAreas = (areas || []).filter((a) => a.isActive);
   const cityCount = new Set(activeAreas.map((a) => a.city)).size;
@@ -120,7 +117,7 @@ export default function Home() {
       <section className="hero">
         <div className="container hero-grid">
           <div>
-            <div className="eyebrow">Trusted packers &amp; movers · Since 2011</div>
+            <div className="eyebrow">Trusted packers &amp; movers · Since {SITE.founded}</div>
             <h1>
               Move Smarter.
               <span className="line2">Settle Faster.</span>
@@ -196,7 +193,7 @@ export default function Home() {
                   <p>{s.description}</p>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span className="price-from">from <b>{inr(s.startingPrice)}</b></span>
-                    <Link to="/quote" className="link-arrow">Get quote <Icon name="arrow" size={16} /></Link>
+                    <Link to={serviceCta(s).to} className="link-arrow">{serviceCta(s).label} <Icon name="arrow" size={16} /></Link>
                   </div>
                 </div>
               </article>
@@ -222,7 +219,7 @@ export default function Home() {
           <div className="track-card">
             <div className="track-card-head">
               <div>
-                <div className="small muted">Booking</div>
+                <div className="small muted">Sample booking</div>
                 <b style={{ color: 'var(--navy-800)', fontSize: 17 }}>#SE48213KXQ7P</b>
               </div>
               <span className="tag warn">Picked Up</span>
@@ -262,7 +259,7 @@ export default function Home() {
           </div>
           <div className="grid-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))' }}>
             {MOVE_TYPES.map((m) => (
-              <Link key={m.label} to="/quote" className="tile">
+              <Link key={m.label} to={m.to} className="tile">
                 <Icon name={m.icon} size={22} /> {m.label}
               </Link>
             ))}
@@ -308,14 +305,8 @@ export default function Home() {
           </div>
           <div className="faq-grid">
             <div>
-              {FAQS.map((f, i) => (
-                <div key={f.q} className={`faq-item ${openFaq === i ? 'open' : ''}`}>
-                  <button className="faq-q" onClick={() => setOpenFaq(openFaq === i ? -1 : i)} aria-expanded={openFaq === i}>
-                    {f.q} <Icon name="plus" size={18} />
-                  </button>
-                  {openFaq === i && <div className="faq-a">{f.a}</div>}
-                </div>
-              ))}
+              <FaqList items={FAQS.slice(0, 5)} />
+              <Link to="/faq" className="link-arrow" style={{ marginTop: 8 }}>See all FAQs <Icon name="arrow" size={16} /></Link>
             </div>
             <div className="card help-card">
               <span className="kpi-icon" style={{ background: '#fff' }}><Icon name="headset" /></span>
@@ -343,9 +334,9 @@ export default function Home() {
               </div>
             </div>
             <div className="cta-contacts">
-              <div><Icon name="phone" /> 1800 123 4567</div>
-              <div><Icon name="mail" /> hello@shiftease.in</div>
-              <div><Icon name="pin" /> Koramangala, Bengaluru 560034</div>
+              <a href={SITE.phoneHref}><Icon name="phone" /> {SITE.phone}</a>
+              <a href={`mailto:${SITE.email}`}><Icon name="mail" /> {SITE.email}</a>
+              <a href={SITE.address.mapUrl} target="_blank" rel="noopener noreferrer"><Icon name="pin" /> {SITE.address.line2}</a>
             </div>
           </div>
         </div>

@@ -3,24 +3,26 @@ import { Link } from 'react-router-dom';
 import api from '../../api';
 import Icon from '../../components/Icon';
 import NetworkMap from '../../components/NetworkMap';
-import { useFetch, Alert, StatusTag, Empty } from '../../components/ui';
+import { useFetch, useTitle, Alert, StatusTag, Empty } from '../../components/ui';
 import { useAuth } from '../../context/AuthContext';
 import { inr, date, areaLabel } from '../../utils/format';
 
 export default function AdminOverview() {
+  useTitle('Admin dashboard');
   const { user } = useAuth();
   const { data: s, loading, error } = useFetch(() => api.stats(), []);
   const { data: areas } = useFetch(() => api.areas(true), []);
 
   const kpis = s
     ? [
-        ['truck', 'Total bookings', s.bookings, ''],
-        ['route', 'Active moves', s.activeBookings, 'green'],
-        ['rupee', 'Booked revenue', inr(s.revenue), ''],
-        ['inbox', 'New inquiries', `${s.newContacts} / ${s.contacts}`, 'green'],
-        ['file', 'Quotes requested', s.quotes, ''],
-        ['pin', 'Live areas', s.areas, 'green'],
-        ['user', 'Customers', s.customers, ''],
+        ['truck', 'Total bookings', s.bookings, '', '/admin/bookings'],
+        ['route', 'Active moves', s.activeBookings, 'green', '/admin/bookings'],
+        ['rupee', 'Booked revenue', inr(s.revenue), '', '/admin/bookings'],
+        ['inbox', 'New inquiries', `${s.newContacts} / ${s.contacts}`, 'green', '/admin/contacts'],
+        ['file', 'New quotes', `${s.newQuotes} / ${s.quotes}`, '', '/admin/quotes'],
+        ['pin', 'Live areas', s.areas, 'green', '/admin/areas'],
+        ['users', 'Customers', s.customers, '', '/admin/customers'],
+        ['mail', 'Subscribers', s.subscribers, 'green', '/admin/subscribers'],
       ]
     : [];
 
@@ -32,18 +34,18 @@ export default function AdminOverview() {
           <h1>Good to see you, {user.name.split(' ')[0]}</h1>
         </div>
         <div className="toolbar">
-          <Link to="/admin/areas" className="btn btn-outline btn-sm"><Icon name="plus" size={16} /> Add area</Link>
+          <Link to="/admin/areas?new=1" className="btn btn-outline btn-sm"><Icon name="plus" size={16} /> Add area</Link>
           <Link to="/admin/contacts" className="btn btn-primary btn-sm"><Icon name="inbox" size={16} /> View inquiries</Link>
         </div>
       </div>
       <Alert>{error}</Alert>
       {loading && <div className="spinner" />}
       <div className="kpis" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(210px, 1fr))', marginBottom: 24 }}>
-        {kpis.map(([icon, label, value, tone]) => (
-          <div key={label} className="kpi">
+        {kpis.map(([icon, label, value, tone, to]) => (
+          <Link key={label} to={to} className="kpi kpi-link">
             <span className={`kpi-icon ${tone}`}><Icon name={icon} /></span>
             <div><b>{value}</b><span>{label}</span></div>
-          </div>
+          </Link>
         ))}
       </div>
 

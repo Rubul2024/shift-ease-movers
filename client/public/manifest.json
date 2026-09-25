@@ -1,0 +1,9 @@
+{
+  "short_name": "ShiftEase",
+  "name": "ShiftEase Movers",
+  "icons": [{ "src": "favicon.svg", "type": "image/svg+xml", "sizes": "any" }],
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#0b2a5b",
+  "background_color": "#ffffff"
+}

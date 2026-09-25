@@ -3,9 +3,11 @@ const Booking = require('../models/Booking');
 const Area = require('../models/Area');
 const asyncHandler = require('../utils/asyncHandler');
 const { protect, adminOnly } = require('../middleware/auth');
-const { calculateQuote, distanceBetween } = require('../utils/pricing');
+const { calculateQuote, distanceBetween, TIME_SLOTS } = require('../utils/pricing');
+const { escapeRegex, parseMoveDate } = require('../utils/validate');
+const { sendMail, templates, siteUrl } = require('../utils/mailer');
 
-const POPULATE = ['pickupArea dropArea', 'name city'];
+const POPULATE = ['pickupArea dropArea', 'name city state'];
 
 // POST /api/bookings -> customer books a moving cab instantly
 router.post(
@@ -28,12 +30,9 @@ router.post(
     if (pickup.availableCabs < 1) {
       return res.status(409).json({ message: `All cabs in ${pickup.name} are busy. Please try another slot.` });
     }
-    const date = new Date(b.movingDate);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    if (Number.isNaN(date.getTime()) || date < today) {
-      return res.status(400).json({ message: 'Please choose today or a future date' });
-    }
+    const date = parseMoveDate(b.movingDate);
+    const timeSlot = b.timeSlot === undefined ? TIME_SLOTS[0] : b.timeSlot;
+    if (!TIME_SLOTS.includes(timeSlot)) return res.status(400).json({ message: 'Please choose a valid time slot' });
 
     const distanceKm = distanceBetween(pickup, drop);
     const breakdown = calculateQuote({ ...b, distanceKm });
@@ -47,7 +46,7 @@ router.post(
       pickupAddress: b.pickupAddress,
       dropAddress: b.dropAddress,
       movingDate: date,
-      timeSlot: b.timeSlot,
+      timeSlot,
       houseType: b.houseType,
       vehicleType: b.vehicleType,
       distanceKm,
@@ -61,7 +60,9 @@ router.post(
       status: 'Confirmed',
       history: [{ status: 'Confirmed', note: 'Booking confirmed instantly online' }],
     });
-    res.status(201).json(await booking.populate(...POPULATE));
+    await booking.populate(...POPULATE);
+    sendMail({ to: req.user.email, ...templates.bookingConfirmed(booking, req.user, siteUrl(req)) });
+    res.status(201).json(booking);
   })
 );
 
@@ -74,11 +75,11 @@ router.get(
   })
 );
 
-// GET /api/bookings/track/:bookingId -> public tracking
+// GET /api/bookings/track/:bookingId -> public tracking (no personal details)
 router.get(
   '/track/:bookingId',
   asyncHandler(async (req, res) => {
-    const booking = await Booking.findOne({ bookingId: req.params.bookingId.toUpperCase() })
+    const booking = await Booking.findOne({ bookingId: String(req.params.bookingId).trim().toUpperCase() })
       .populate(...POPULATE)
       .select('bookingId pickupArea dropArea movingDate timeSlot vehicleType houseType status history createdAt');
     if (!booking) return res.status(404).json({ message: 'No booking found with this ID' });
@@ -104,15 +105,35 @@ router.put(
 );
 
 // ---------- Admin ----------
+// GET /api/bookings?status=&q=  (q matches booking ID, contact name or phone)
 router.get(
   '/',
   protect,
   adminOnly,
   asyncHandler(async (req, res) => {
-    const filter = req.query.status ? { status: req.query.status } : {};
+    const filter = {};
+    if (req.query.status) filter.status = req.query.status;
+    if (req.query.q) {
+      const rx = new RegExp(escapeRegex(req.query.q.trim()), 'i');
+      filter.$or = [{ bookingId: rx }, { contactName: rx }, { contactPhone: rx }];
+    }
     res.json(
-      await Booking.find(filter).populate(...POPULATE).populate('user', 'name email').sort({ createdAt: -1 })
+      await Booking.find(filter).populate(...POPULATE).populate('user', 'name email').sort({ createdAt: -1 }).limit(500)
     );
+  })
+);
+
+// GET /api/bookings/:id -> full booking (receipt). Owner or admin only.
+router.get(
+  '/:id',
+  protect,
+  asyncHandler(async (req, res) => {
+    const booking = await Booking.findById(req.params.id).populate(...POPULATE).populate('user', 'name email');
+    const isOwner = booking && booking.user && String(booking.user._id) === String(req.user._id);
+    if (!booking || (!isOwner && req.user.role !== 'admin')) {
+      return res.status(404).json({ message: 'Booking not found' });
+    }
+    res.json(booking);
   })
 );
 
@@ -122,14 +143,19 @@ router.put(
   adminOnly,
   asyncHandler(async (req, res) => {
     const { status } = req.body;
-    const note = typeof req.body.note === 'string' ? req.body.note : undefined;
+    const note = typeof req.body.note === 'string' ? req.body.note.trim().slice(0, 500) : undefined;
     if (!Booking.STATUSES.includes(status)) return res.status(400).json({ message: 'Invalid status' });
-    const booking = await Booking.findById(req.params.id);
+    const booking = await Booking.findById(req.params.id).populate('user', 'name email');
     if (!booking) return res.status(404).json({ message: 'Booking not found' });
+    const changed = booking.status !== status;
     booking.status = status;
-    booking.history.push({ status, note });
+    booking.history.push({ status, note: note || undefined });
     await booking.save();
-    res.json(await booking.populate(...POPULATE));
+    await booking.populate(...POPULATE);
+    if (changed && booking.user && booking.user.email) {
+      sendMail({ to: booking.user.email, ...templates.bookingStatus(booking, siteUrl(req)) });
+    }
+    res.json(booking);
   })
 );
 

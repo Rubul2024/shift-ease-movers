@@ -22,6 +22,8 @@ const HOUSE_TYPES = {
   Office: 12000,
 };
 
+const TIME_SLOTS = ['07:00 - 10:00', '10:00 - 13:00', '13:00 - 16:00', '16:00 - 19:00'];
+
 const FLOOR_RATE = 350; // per floor, per side, when no lift
 const PREMIUM_PACKING_RATE = 0.4; // +40% of labour & packing
 const INSURANCE_RATE = 0.03; // 3% of the move subtotal
@@ -88,4 +90,4 @@ function calculateQuote({
   };
 }
 
-module.exports = { VEHICLES, HOUSE_TYPES, calculateQuote, distanceBetween };
+module.exports = { VEHICLES, HOUSE_TYPES, TIME_SLOTS, calculateQuote, distanceBetween };

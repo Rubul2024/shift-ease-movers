@@ -26,6 +26,28 @@ export function useFetch(fn, deps = []) {
   return { data, loading, error, reload, setData };
 }
 
+const BASE_TITLE = 'ShiftEase Movers';
+const DEFAULT_DESCRIPTION = 'ShiftEase Movers - get an instant moving quote and book a packers & movers cab online.';
+
+/** Sets the browser tab title (and meta description) for the current page. */
+export function useTitle(title, description) {
+  useEffect(() => {
+    document.title = title ? `${title} | ${BASE_TITLE}` : `${BASE_TITLE} | Packers & Movers Online`;
+    const meta = document.querySelector('meta[name="description"]');
+    if (meta) meta.setAttribute('content', description || DEFAULT_DESCRIPTION);
+  }, [title, description]);
+}
+
+/** Returns value after it stops changing for `ms` (for search boxes that hit the API). */
+export function useDebounced(value, ms = 300) {
+  const [v, setV] = useState(value);
+  useEffect(() => {
+    const t = setTimeout(() => setV(value), ms);
+    return () => clearTimeout(t);
+  }, [value, ms]);
+  return v;
+}
+
 export function StatusTag({ status }) {
   const tone = STATUS_TONE[status] || 'gray';
   return <span className={`tag ${tone === 'blue' ? '' : tone}`}>{status}</span>;

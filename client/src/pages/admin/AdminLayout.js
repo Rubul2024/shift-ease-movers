@@ -10,6 +10,8 @@ const LINKS = [
   { to: '/admin/bookings', label: 'Bookings', icon: 'truck' },
   { to: '/admin/quotes', label: 'Quotes', icon: 'file' },
   { to: '/admin/services', label: 'Services', icon: 'box' },
+  { to: '/admin/customers', label: 'Customers', icon: 'users' },
+  { to: '/admin/subscribers', label: 'Newsletter', icon: 'mail' },
 ];
 
 export default function AdminLayout() {

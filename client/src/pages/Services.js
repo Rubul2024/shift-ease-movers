@@ -2,11 +2,20 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api';
 import Icon from '../components/Icon';
-import { useFetch, PageHeader, Alert } from '../components/ui';
+import { useFetch, useTitle, PageHeader, Alert } from '../components/ui';
 import { VEHICLES } from '../utils/pricing';
 import { inr } from '../utils/format';
 
+// Where each service's call-to-action goes: a pre-filled quote, or an inquiry for services priced case by case.
+export function serviceCta(s) {
+  if (s.icon === 'office') return { to: '/quote?house=Office', label: 'Get quote' };
+  if (s.icon === 'car' || s.icon === 'bike') return { to: '/contact?subject=Vehicle+transport', label: 'Enquire' };
+  if (s.icon === 'warehouse') return { to: '/contact?subject=Storage', label: 'Enquire' };
+  return { to: '/quote', label: 'Get quote' };
+}
+
 export default function Services() {
+  useTitle('Services', 'Home relocation, office shifting, vehicle transport, packing and storage. Transparent rates for every moving cab.');
   const { data: services, loading, error } = useFetch(() => api.services(), []);
 
   return (
@@ -29,7 +38,7 @@ export default function Services() {
                   <p>{s.description}</p>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span className="price-from">from <b>{inr(s.startingPrice)}</b></span>
-                    <Link to="/quote" className="link-arrow">Get quote <Icon name="arrow" size={16} /></Link>
+                    <Link to={serviceCta(s).to} className="link-arrow">{serviceCta(s).label} <Icon name="arrow" size={16} /></Link>
                   </div>
                 </div>
               </article>

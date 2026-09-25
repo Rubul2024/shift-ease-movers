@@ -4,6 +4,7 @@ const Contact = require('../models/Contact');
 const Quote = require('../models/Quote');
 const Area = require('../models/Area');
 const User = require('../models/User');
+const Subscriber = require('../models/Subscriber');
 const asyncHandler = require('../utils/asyncHandler');
 const { protect, adminOnly } = require('../middleware/auth');
 
@@ -13,15 +14,17 @@ router.get(
   protect,
   adminOnly,
   asyncHandler(async (req, res) => {
-    const [bookings, activeBookings, newContacts, contacts, quotes, areas, customers, revenueAgg, recent] =
+    const [bookings, activeBookings, newContacts, contacts, quotes, newQuotes, areas, customers, subscribers, revenueAgg, recent] =
       await Promise.all([
         Booking.countDocuments(),
         Booking.countDocuments({ status: { $nin: ['Delivered', 'Cancelled'] } }),
         Contact.countDocuments({ status: 'New' }),
         Contact.countDocuments(),
         Quote.countDocuments(),
+        Quote.countDocuments({ status: 'New' }),
         Area.countDocuments({ isActive: true }),
         User.countDocuments({ role: 'customer' }),
+        Subscriber.countDocuments(),
         Booking.aggregate([
           { $match: { status: { $ne: 'Cancelled' } } },
           { $group: { _id: null, total: { $sum: '$amount' } } },
@@ -34,8 +37,10 @@ router.get(
       newContacts,
       contacts,
       quotes,
+      newQuotes,
       areas,
       customers,
+      subscribers,
       revenue: revenueAgg[0] ? revenueAgg[0].total : 0,
       recent,
     });

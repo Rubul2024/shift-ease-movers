@@ -3,10 +3,11 @@ import { Link } from 'react-router-dom';
 import api from '../api';
 import Icon from '../components/Icon';
 import NetworkMap from '../components/NetworkMap';
-import { useFetch, PageHeader, Alert, Empty } from '../components/ui';
+import { useFetch, useTitle, PageHeader, Alert, Empty } from '../components/ui';
 
 // Customers see every area where cabs are available (and which vehicles each area offers).
 export default function Areas() {
+  useTitle('Service areas', 'Check if ShiftEase serves your pincode and see where moving cabs are available right now.');
   const { data: areas, loading, error } = useFetch(() => api.areas(), []);
   const [q, setQ] = useState('');
   const [city, setCity] = useState('');

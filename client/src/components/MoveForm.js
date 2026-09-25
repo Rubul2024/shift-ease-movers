@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import Icon from './Icon';
 import { VEHICLES, HOUSE_TYPES, SUGGESTED_VEHICLE, calculateQuote, distanceBetween, hasOwn } from '../utils/pricing';
-import { inr, todayISO } from '../utils/format';
+import { inr, todayISO, maxMoveDateISO } from '../utils/format';
 
 export const initialMove = (params = {}) => ({
   fromArea: params.from || '',
@@ -59,7 +59,7 @@ export function MoveFields({ move, setMove, areas, startStep = 1 }) {
         </div>
         <div className="field">
           <label htmlFor="mf-date">Moving date</label>
-          <input id="mf-date" type="date" className="input" required min={todayISO()} value={move.movingDate} onChange={set('movingDate')} />
+          <input id="mf-date" type="date" className="input" required min={todayISO()} max={maxMoveDateISO()} value={move.movingDate} onChange={set('movingDate')} />
         </div>
       </div>
 

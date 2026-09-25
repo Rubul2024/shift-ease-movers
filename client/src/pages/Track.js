@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import api from '../api';
 import Icon from '../components/Icon';
-import { PageHeader, Alert, StatusTimeline, StatusTag } from '../components/ui';
+import { PageHeader, Alert, StatusTimeline, StatusTag, useTitle } from '../components/ui';
+import { SITE } from '../config';
 import { date, dateTime } from '../utils/format';
 
 export default function Track() {
@@ -22,6 +23,7 @@ export default function Track() {
   }, [bookingId]);
 
   const b = state.booking;
+  useTitle(bookingId ? `Track ${bookingId.toUpperCase()}` : 'Track your move');
 
   return (
     <>
@@ -78,6 +80,12 @@ export default function Track() {
                     <span className="small muted" style={{ marginLeft: 'auto', whiteSpace: 'nowrap' }}>{dateTime(h.at)}</span>
                   </div>
                 ))}
+              </div>
+              <div className="help-strip">
+                <Icon name="headset" size={20} />
+                <span>Need to reschedule or have a question about this move?</span>
+                <a href={SITE.phoneHref} className="btn btn-outline btn-sm">Call {SITE.phone}</a>
+                <Link to={`/contact?subject=Existing+booking&booking=${b.bookingId}`} className="btn btn-primary btn-sm">Message us</Link>
               </div>
             </div>
           )}

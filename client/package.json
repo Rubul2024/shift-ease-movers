@@ -9,9 +9,10 @@
     "react-scripts": "5.0.1"
   },
   "scripts": {
-    "dev": "vite",
-    "build": "vite",
-    "preview": "vite"
+    "start": "react-scripts start",
+    "dev": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test"
   },
   "eslintConfig": {
     "extends": [
@@ -31,7 +32,6 @@
     ]
   },
   "devDependencies": {
-    "http-proxy-middleware": "^2.0.10",
-    "vite": "^8.3.1"
+    "http-proxy-middleware": "^2.0.10"
   }
 }

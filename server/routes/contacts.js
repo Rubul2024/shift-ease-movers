@@ -3,12 +3,17 @@ const Contact = require('../models/Contact');
 const asyncHandler = require('../utils/asyncHandler');
 const { protect, adminOnly } = require('../middleware/auth');
 const { pick, escapeRegex } = require('../utils/validate');
+const { sendMail, templates, siteUrl } = require('../utils/mailer');
 
 // POST /api/contacts  -> public inquiry form
 router.post(
   '/',
   asyncHandler(async (req, res) => {
     const contact = await Contact.create(pick(req.body, ['name', 'email', 'phone', 'city', 'subject', 'message']));
+    if (process.env.ADMIN_NOTIFY_EMAIL) {
+      sendMail({ to: process.env.ADMIN_NOTIFY_EMAIL, replyTo: contact.email, ...templates.newInquiry(contact, siteUrl(req)) });
+    }
+    sendMail({ to: contact.email, ...templates.inquiryReceived(contact) });
     res.status(201).json({ message: 'Thanks! Our team will call you within 30 minutes.', id: contact._id });
   })
 );

@@ -1,13 +1,16 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import api from '../../api';
 import Icon from '../../components/Icon';
-import { useFetch, Alert, Modal, Empty } from '../../components/ui';
+import { useFetch, useTitle, Alert, Modal, Empty } from '../../components/ui';
 import { VEHICLES } from '../../utils/pricing';
 
 const BLANK = { name: '', city: '', state: '', pincodes: '', lat: '', lng: '', vehicleTypes: ['Mini Truck', 'Tempo'], availableCabs: 5, isActive: true, notes: '' };
 
 // Admin defines the areas where cabs can be booked.
 export default function AdminAreas() {
+  useTitle('Service areas · Admin');
+  const [params, setParams] = useSearchParams();
   const { data, loading, error, setData } = useFetch(() => api.areas(true), []);
   const [editing, setEditing] = useState(null); // null | BLANK | area
   const [form, setForm] = useState(BLANK);
@@ -20,6 +23,15 @@ export default function AdminAreas() {
     setEditing(area || BLANK);
     setForm(area ? { ...area, pincodes: (area.pincodes || []).join(', '), notes: area.notes || '', state: area.state || '' } : BLANK);
   };
+  // /admin/areas?new=1 (from the overview) opens the "Add area" form directly.
+  useEffect(() => {
+    if (params.get('new')) {
+      open(null);
+      setParams({}, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params]);
+
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.type === 'checkbox' ? e.target.checked : e.target.value });
   const toggleVehicle = (v) =>
     setForm({ ...form, vehicleTypes: form.vehicleTypes.includes(v) ? form.vehicleTypes.filter((x) => x !== v) : [...form.vehicleTypes, v] });

@@ -15,6 +15,14 @@ export const todayISO = () => {
   return d.toISOString().slice(0, 10);
 };
 
+/** Latest bookable moving date (one year ahead), matching the server rule. */
+export const maxMoveDateISO = () => {
+  const d = new Date();
+  d.setFullYear(d.getFullYear() + 1);
+  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  return d.toISOString().slice(0, 10);
+};
+
 export const areaLabel = (a) => (a ? `${a.name}, ${a.city}` : '-');
 
 export const initials = (name = '') =>

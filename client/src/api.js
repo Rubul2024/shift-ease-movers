@@ -56,6 +56,10 @@ const api = {
   login: (body) => request('/auth/login', { method: 'POST', body }),
   register: (body) => request('/auth/register', { method: 'POST', body }),
   me: () => request('/auth/me'),
+  updateProfile: (body) => request('/auth/me', { method: 'PUT', body }),
+  changePassword: (body) => request('/auth/password', { method: 'PUT', body }),
+  forgotPassword: (email) => request('/auth/forgot-password', { method: 'POST', body: { email } }),
+  resetPassword: (token, password) => request(`/auth/reset-password/${encodeURIComponent(token)}`, { method: 'POST', body: { password } }),
   // areas
   areas: (all = false) => request(`/areas${all ? '?all=true' : ''}`),
   checkPincode: (pincode) => request(`/areas/check?pincode=${encodeURIComponent(pincode)}`),
@@ -71,7 +75,7 @@ const api = {
   estimate: (body) => request('/quotes/estimate', { method: 'POST', body }),
   createQuote: (body) => request('/quotes', { method: 'POST', body }),
   myQuotes: () => request('/quotes/mine'),
-  quotes: () => request('/quotes'),
+  quotes: (params = '') => request(`/quotes${params}`),
   updateQuote: (id, body) => request(`/quotes/${id}`, { method: 'PUT', body }),
   deleteQuote: (id) => request(`/quotes/${id}`, { method: 'DELETE' }),
   // bookings
@@ -79,13 +83,20 @@ const api = {
   myBookings: () => request('/bookings/mine'),
   track: (id) => request(`/bookings/track/${encodeURIComponent(id)}`),
   cancelBooking: (id) => request(`/bookings/${id}/cancel`, { method: 'PUT' }),
-  bookings: (status = '') => request(`/bookings${status ? `?status=${encodeURIComponent(status)}` : ''}`),
+  bookings: (params = '') => request(`/bookings${params}`),
+  booking: (id) => request(`/bookings/${id}`),
   setBookingStatus: (id, body) => request(`/bookings/${id}/status`, { method: 'PUT', body }),
   // services
   services: (all = false) => request(`/services${all ? '?all=true' : ''}`),
   createService: (body) => request('/services', { method: 'POST', body }),
   updateService: (id, body) => request(`/services/${id}`, { method: 'PUT', body }),
   deleteService: (id) => request(`/services/${id}`, { method: 'DELETE' }),
+  // newsletter
+  subscribe: (email) => request('/newsletter', { method: 'POST', body: { email } }),
+  subscribers: () => request('/newsletter'),
+  deleteSubscriber: (id) => request(`/newsletter/${id}`, { method: 'DELETE' }),
+  // customers (admin)
+  customers: (params = '') => request(`/users${params}`),
   // admin stats
   stats: () => request('/stats'),
 };

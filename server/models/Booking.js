@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { PHONE_RE } = require('../utils/validate');
 
 const STATUSES = ['Confirmed', 'Vehicle Assigned', 'Picked Up', 'In Transit', 'Delivered', 'Cancelled'];
 
@@ -7,7 +8,7 @@ const bookingSchema = new mongoose.Schema(
     bookingId: { type: String, unique: true, index: true },
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     contactName: { type: String, required: [true, 'Contact name is required'], trim: true, maxlength: 100 },
-    contactPhone: { type: String, required: [true, 'Contact phone is required'], trim: true, maxlength: 20 },
+    contactPhone: { type: String, required: [true, 'Contact phone is required'], trim: true, match: [PHONE_RE, 'Please enter a valid mobile number'] },
     pickupArea: { type: mongoose.Schema.Types.ObjectId, ref: 'Area', required: true },
     dropArea: { type: mongoose.Schema.Types.ObjectId, ref: 'Area', required: true },
     pickupAddress: { type: String, required: [true, 'Pickup address is required'], trim: true, maxlength: 300 },
@@ -35,6 +36,9 @@ const bookingSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+bookingSchema.index({ user: 1, createdAt: -1 });
+bookingSchema.index({ status: 1, createdAt: -1 });
 
 bookingSchema.pre('validate', function setBookingId(next) {
   if (!this.bookingId) {

@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import api from '../../api';
 import Icon from '../../components/Icon';
-import { useFetch, Alert, Modal, Empty } from '../../components/ui';
+import { useFetch, useTitle, Alert, Modal, Empty } from '../../components/ui';
 import { inr } from '../../utils/format';
 
 const ICONS = ['home', 'office', 'car', 'box', 'warehouse', 'route', 'bike', 'sofa', 'piano', 'truck'];
-const BLANK = { title: '', description: '', icon: 'box', startingPrice: 0 };
+const BLANK = { title: '', description: '', icon: 'box', startingPrice: 0, isActive: true };
 
 export default function AdminServices() {
+  useTitle('Services · Admin');
+  const [saving, setSaving] = useState(false);
   const { data, loading, error, setData } = useFetch(() => api.services(true), []);
   const [editing, setEditing] = useState(null);
   const [msg, setMsg] = useState('');
@@ -16,7 +18,8 @@ export default function AdminServices() {
 
   const save = async (e) => {
     e.preventDefault();
-    const body = { title: editing.title, description: editing.description, icon: editing.icon, startingPrice: Number(editing.startingPrice) };
+    const body = { title: editing.title, description: editing.description, icon: editing.icon, startingPrice: Number(editing.startingPrice), isActive: editing.isActive !== false };
+    setSaving(true);
     try {
       if (editing._id) {
         const updated = await api.updateService(editing._id, body);
@@ -25,6 +28,17 @@ export default function AdminServices() {
         setData([...services, await api.createService(body)]);
       }
       setEditing(null);
+    } catch (err) {
+      setMsg(err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const toggleActive = async (s) => {
+    try {
+      const updated = await api.updateService(s._id, { isActive: !s.isActive });
+      setData(services.map((x) => (x._id === s._id ? updated : x)));
     } catch (err) {
       setMsg(err.message);
     }
@@ -45,7 +59,7 @@ export default function AdminServices() {
       <div className="dash-head">
         <div>
           <h1>Services</h1>
-          <p className="muted">What customers see on the Services page.</p>
+          <p className="muted">What customers see on the Home and Services pages. Hidden services stay here but aren't shown on the site.</p>
         </div>
         <button className="btn btn-primary" onClick={() => { setMsg(''); setEditing(BLANK); }}><Icon name="plus" size={17} /> Add service</button>
       </div>
@@ -54,7 +68,7 @@ export default function AdminServices() {
       {!loading && services.length === 0 && <div className="card"><Empty icon="box"><p>No services yet.</p></Empty></div>}
       <div className="grid-3">
         {services.map((s) => (
-          <div key={s._id} className="card card-pad" style={{ display: 'grid', gap: 10 }}>
+          <div key={s._id} className="card card-pad" style={{ display: 'grid', gap: 10, opacity: s.isActive === false ? 0.6 : 1 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span className="kpi-icon"><Icon name={s.icon} /></span>
               <div>
@@ -64,7 +78,12 @@ export default function AdminServices() {
             </div>
             <h3 style={{ fontSize: 17, color: 'var(--navy-800)' }}>{s.title}</h3>
             <p className="small muted">{s.description}</p>
-            <span className="price-from">from <b>{inr(s.startingPrice)}</b></span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span className="price-from">from <b>{inr(s.startingPrice)}</b></span>
+              <button className={`tag ${s.isActive !== false ? 'green' : 'gray'}`} style={{ border: 0, cursor: 'pointer' }} onClick={() => toggleActive(s)} title="Click to show or hide on the website">
+                {s.isActive !== false ? 'Visible' : 'Hidden'}
+              </button>
+            </div>
           </div>
         ))}
       </div>
@@ -73,12 +92,12 @@ export default function AdminServices() {
         <Modal
           title={editing._id ? 'Edit service' : 'Add service'}
           onClose={() => setEditing(null)}
-          footer={<><button className="btn btn-outline" onClick={() => setEditing(null)}>Cancel</button><button className="btn btn-primary" form="svc-form">Save</button></>}
+          footer={<><button className="btn btn-outline" onClick={() => setEditing(null)}>Cancel</button><button className="btn btn-primary" form="svc-form" disabled={saving}>{saving ? 'Saving…' : 'Save'}</button></>}
         >
           <form id="svc-form" className="form-grid" onSubmit={save}>
             <div className="field full"><label htmlFor="s-title">Title</label><input id="s-title" className="input" required value={editing.title} onChange={set('title')} /></div>
             <div className="field full"><label htmlFor="s-desc">Description</label><textarea id="s-desc" className="textarea" required value={editing.description} onChange={set('description')} /></div>
-            <div className="field"><label htmlFor="s-price">Starting price (₹)</label><input id="s-price" type="number" min="0" className="input" value={editing.startingPrice} onChange={set('startingPrice')} /></div>
+            <div className="field"><label htmlFor="s-price">Starting price (₹)</label><input id="s-price" type="number" min="0" required className="input" value={editing.startingPrice} onChange={set('startingPrice')} /></div>
             <div className="field">
               <label>Icon</label>
               <div className="pill-group">
@@ -89,6 +108,10 @@ export default function AdminServices() {
                 ))}
               </div>
             </div>
+            <label className={`check full ${editing.isActive !== false ? 'on' : ''}`}>
+              <input type="checkbox" checked={editing.isActive !== false} onChange={(e) => setEditing({ ...editing, isActive: e.target.checked })} />
+              <span>Show on website<small>Turn off to hide this service without deleting it</small></span>
+            </label>
             <div className="full"><Alert>{msg}</Alert></div>
           </form>
         </Modal>

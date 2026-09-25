@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Alert } from '../components/ui';
+import { Alert, useTitle } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
 import { AuthSide } from './Login';
 
 export default function Register() {
+  useTitle('Create account');
   const { register } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -56,6 +57,10 @@ export default function Register() {
               <input id="r-confirm" type="password" className="input" required minLength={6} autoComplete="new-password" value={form.confirm} onChange={set('confirm')} />
             </div>
           </div>
+          <p className="small muted">
+            By signing up you agree to our <Link to="/terms" className="text-blue">Terms of Service</Link> and{' '}
+            <Link to="/privacy" className="text-blue">Privacy Policy</Link>.
+          </p>
           <Alert>{state.error}</Alert>
           <button className="btn btn-primary btn-block" disabled={state.loading}>
             {state.loading ? 'Creating account…' : 'Sign up'}

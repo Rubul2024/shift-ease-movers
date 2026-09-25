@@ -11,7 +11,10 @@ function readToken(req) {
 
 async function loadUser(token) {
   const decoded = jwt.verify(token, JWT_SECRET);
-  return User.findById(decoded.id);
+  const user = await User.findById(decoded.id).select('+passwordChangedAt');
+  // Tokens issued before the last password change are no longer valid.
+  if (user && user.passwordChangedAt && decoded.iat * 1000 < user.passwordChangedAt.getTime()) return null;
+  return user;
 }
 
 /** Requires a valid JWT. */
@@ -20,7 +23,7 @@ async function protect(req, res, next) {
   if (!token) return res.status(401).json({ message: 'Please log in to continue' });
   try {
     const user = await loadUser(token);
-    if (!user) return res.status(401).json({ message: 'Account no longer exists' });
+    if (!user) return res.status(401).json({ message: 'Session expired, please log in again' });
     req.user = user;
     next();
   } catch (err) {

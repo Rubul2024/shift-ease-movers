@@ -1,19 +1,15 @@
 import React, { useState } from 'react';
 import api from '../../api';
 import Icon from '../../components/Icon';
-import { useFetch, Alert, Modal, Empty } from '../../components/ui';
+import { useFetch, useTitle, Alert, Modal, Empty } from '../../components/ui';
 import { dateTime } from '../../utils/format';
+import { downloadCSV } from '../../utils/csv';
 
 const STATUSES = ['New', 'Contacted', 'Converted', 'Closed'];
 
-function toCSV(rows) {
-  const cols = ['name', 'email', 'phone', 'city', 'subject', 'message', 'status', 'adminNotes', 'createdAt'];
-  const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
-  return [cols.join(','), ...rows.map((r) => cols.map((c) => esc(r[c])).join(','))].join('\n');
-}
-
 // Admin can view and maintain every contact / inquiry submitted from the website.
 export default function AdminContacts() {
+  useTitle('Contacts · Admin');
   const { data, loading, error, setData } = useFetch(() => api.contacts(), []);
   const [q, setQ] = useState('');
   const [status, setStatus] = useState('');
@@ -56,14 +52,12 @@ export default function AdminContacts() {
     }
   };
 
-  const exportCSV = () => {
-    const blob = new Blob([toCSV(filtered)], { type: 'text/csv' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `shiftease-contacts-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(a.href);
-  };
+  const exportCSV = () =>
+    downloadCSV(
+      'shiftease-contacts',
+      filtered,
+      ['name', 'email', 'phone', 'city', 'subject', 'message', 'status', 'adminNotes', 'createdAt'].map((k) => [k, (r) => r[k]])
+    );
 
   const set = (k) => (e) => setEditing({ ...editing, [k]: e.target.value });
 
@@ -103,7 +97,7 @@ export default function AdminContacts() {
                     <td>
                       <div className="cell-strong">{c.name}</div>
                       <div className="small"><a href={`tel:${c.phone}`} className="text-blue">{c.phone}</a></div>
-                      <div className="small muted">{c.email}{c.city ? ` · ${c.city}` : ''}</div>
+                      <div className="small muted"><a href={`mailto:${c.email}`}>{c.email}</a>{c.city ? ` · ${c.city}` : ''}</div>
                     </td>
                     <td style={{ maxWidth: 360 }}>
                       <span className="tag gray">{c.subject}</span>

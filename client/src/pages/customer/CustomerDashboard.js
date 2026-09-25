@@ -1,15 +1,20 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../../api';
 import Icon from '../../components/Icon';
-import { useFetch, Alert, Empty, StatusTag, StatusTimeline } from '../../components/ui';
+import { useFetch, useTitle, Alert, Empty, StatusTag, StatusTimeline } from '../../components/ui';
+import Profile from './Profile';
 import { useAuth } from '../../context/AuthContext';
 import { inr, date } from '../../utils/format';
 
 export default function CustomerDashboard() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const [tab, setTab] = useState('bookings');
+  useTitle('My moves');
+  // Tab lives in the URL so it survives reloads and can be linked to (e.g. /dashboard?tab=profile).
+  const [params, setParams] = useSearchParams();
+  const tab = ['bookings', 'quotes', 'profile'].includes(params.get('tab')) ? params.get('tab') : 'bookings';
+  const setTab = (t) => setParams(t === 'bookings' ? {} : { tab: t }, { replace: true });
   const bookings = useFetch(() => api.myBookings(), []);
   const quotes = useFetch(() => api.myQuotes(), []);
   const [msg, setMsg] = useState({ type: 'error', text: '' });
@@ -32,11 +37,14 @@ export default function CustomerDashboard() {
     <div className="dash">
       <aside className="side">
         <div className="side-label">My account</div>
-        <button className={`side-link ${tab === 'bookings' ? 'active' : ''}`} style={tab === 'bookings' ? { background: 'var(--blue-600)', color: '#fff' } : undefined} onClick={() => setTab('bookings')}>
+        <button className={`side-link ${tab === 'bookings' ? 'on' : ''}`} onClick={() => setTab('bookings')}>
           <Icon name="truck" size={18} /> My Bookings {active.length > 0 && <span className="badge">{active.length}</span>}
         </button>
-        <button className="side-link" style={tab === 'quotes' ? { background: 'var(--blue-600)', color: '#fff' } : undefined} onClick={() => setTab('quotes')}>
+        <button className={`side-link ${tab === 'quotes' ? 'on' : ''}`} onClick={() => setTab('quotes')}>
           <Icon name="file" size={18} /> My Quotes
+        </button>
+        <button className={`side-link ${tab === 'profile' ? 'on' : ''}`} onClick={() => setTab('profile')}>
+          <Icon name="user" size={18} /> Profile &amp; Security
         </button>
         <Link to="/book"><Icon name="plus" size={18} /> Book a Cab</Link>
         <Link to="/areas"><Icon name="pin" size={18} /> Service Areas</Link>
@@ -94,6 +102,7 @@ export default function CustomerDashboard() {
                 {b.status !== 'Cancelled' && <StatusTimeline status={b.status} history={b.history} />}
                 <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                   <Link to={`/track/${b.bookingId}`} className="btn btn-outline btn-sm">Track</Link>
+                  <Link to={`/receipt/${b._id}`} className="btn btn-outline btn-sm"><Icon name="printer" size={15} /> Receipt</Link>
                   {['Confirmed', 'Vehicle Assigned'].includes(b.status) && (
                     <button className="btn btn-danger btn-sm" onClick={() => cancel(b)}>Cancel booking</button>
                   )}
@@ -102,6 +111,8 @@ export default function CustomerDashboard() {
             ))}
           </div>
         )}
+
+        {tab === 'profile' && <Profile />}
 
         {tab === 'quotes' && (
           <div className="card">

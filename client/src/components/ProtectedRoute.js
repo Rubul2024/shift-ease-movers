@@ -8,7 +8,8 @@ export default function ProtectedRoute({ role, children }) {
 
   if (!ready) return <div className="spinner" />;
   if (!user) {
-    return <Navigate to="/login" replace state={{ from: location.pathname, role: role || 'customer' }} />;
+    // Keep the query string so e.g. /book?pickup=... survives the detour through login.
+    return <Navigate to="/login" replace state={{ from: `${location.pathname}${location.search}` }} />;
   }
   if (role && user.role !== role) {
     return <Navigate to={user.role === 'admin' ? '/admin' : '/dashboard'} replace />;

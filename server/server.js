@@ -51,8 +51,16 @@ const strictLimit = rateLimit({
   legacyHeaders: false,
   message: { message: 'Too many attempts, please try again in a few minutes' },
 });
-app.use(['/api/auth/login', '/api/auth/register'], strictLimit);
-app.post('/api/contacts', strictLimit);
+app.use(['/api/auth/login', '/api/auth/register', '/api/auth/forgot-password', '/api/auth/reset-password'], strictLimit);
+// Public lead forms: limit writes only, so browsing stays unaffected.
+const formLimit = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 30,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: { message: 'Too many submissions, please try again in a few minutes' },
+});
+app.post(['/api/contacts', '/api/quotes', '/api/newsletter'], formLimit);
 
 app.get('/api/health', (req, res) => {
   const dbUp = mongoose.connection.readyState === 1;
@@ -66,6 +74,8 @@ app.use('/api/quotes', require('./routes/quotes'));
 app.use('/api/bookings', require('./routes/bookings'));
 app.use('/api/services', require('./routes/services'));
 app.use('/api/stats', require('./routes/stats'));
+app.use('/api/newsletter', require('./routes/newsletter'));
+app.use('/api/users', require('./routes/users'));
 
 app.use('/api', (req, res) => res.status(404).json({ message: 'Route not found' }));
 
