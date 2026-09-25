@@ -153,3 +153,5 @@ git push -u origin main
 | ![Quote](docs/screenshots/quote.png) | ![Booking confirmed](docs/screenshots/booking-confirmed.png) |
 | ![Service areas](docs/screenshots/service-areas.png) | ![Customer dashboard](docs/screenshots/customer-dashboard.png) |
 | ![Admin areas](docs/screenshots/admin-areas.png) | ![Admin contacts](docs/screenshots/admin-contacts.png) |
+#   s h i f t - e a s e - m o v e r s  
+ 
